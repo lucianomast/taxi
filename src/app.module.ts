@@ -15,9 +15,7 @@ import { AppController } from './app.controller';
       // Usar la URL de conexión que Railway proporciona
       type: 'mysql',
       url: process.env.DATABASE_URL,
-      ssl: {
-        rejectUnauthorized: false,
-      },
+      ssl: false, // Deshabilitar SSL para Railway
       autoLoadEntities: true,
       synchronize: false,
     }),
