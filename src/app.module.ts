@@ -13,14 +13,15 @@ import { AppController } from './app.controller';
   imports: [
     TypeOrmModule.forRoot({
       type: process.env.DB_TYPE as 'mysql' || 'mysql',
-      host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306,
+      host: process.env.DB_HOST || 'trolley.proxy.rlwy.net',
+      port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 49619,
       username: process.env.DB_USERNAME || 'root',
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_DATABASE || 'taxi_db',
-      ssl: process.env.DB_SSL === 'true',
+      password: process.env.DB_PASSWORD || 'EHpUGGfgpQhfuHqavglpiHTCoCJHMByk',
+      database: process.env.DB_DATABASE || 'Taxi',
+      ssl: process.env.DB_SSL === 'true' ? true : false,
       autoLoadEntities: true,
       synchronize: false,
+      logging: true, // Habilitar logs de SQL para debug
     }),
     AuthModule,
     ClientesModule,

@@ -7,6 +7,17 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 async function bootstrap() {
+  // Log de variables de entorno para debug
+  console.log('🔍 Variables de entorno detectadas:');
+  console.log('DB_TYPE:', process.env.DB_TYPE);
+  console.log('DB_HOST:', process.env.DB_HOST);
+  console.log('DB_PORT:', process.env.DB_PORT);
+  console.log('DB_USERNAME:', process.env.DB_USERNAME);
+  console.log('DB_DATABASE:', process.env.DB_DATABASE);
+  console.log('DB_SSL:', process.env.DB_SSL);
+  console.log('PORT:', process.env.PORT);
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+
   const app = await NestFactory.create(AppModule);
   app.enableCors({
     origin: 'http://localhost:8081',
@@ -82,6 +93,8 @@ flowchart TD
   SwaggerModule.setup('api/docs', app, document);
 
   const port = process.env.PORT || 3000;
+  console.log(`🚀 Servidor iniciando en puerto ${port}`);
   await app.listen(port);
+  console.log(`✅ Servidor iniciado correctamente en puerto ${port}`);
 }
 bootstrap();

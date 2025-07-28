@@ -52,6 +52,32 @@ El archivo `env.example` incluye configuraciones para diferentes entornos:
 - **PlanetScale** (Producción)
 - **Supabase** (Producción)
 
+## Despliegue en Railway
+
+### Configuración Automática
+El proyecto incluye un archivo `railway.toml` que configura automáticamente las variables de entorno para Railway.
+
+### Configuración Manual en Railway
+Si necesitas configurar las variables manualmente en Railway:
+
+1. Ve a tu proyecto en Railway
+2. Navega a la pestaña "Variables"
+3. Agrega las siguientes variables:
+
+```
+DB_TYPE=mysql
+DB_HOST=trolley.proxy.rlwy.net
+DB_PORT=49619
+DB_USERNAME=root
+DB_PASSWORD=EHpUGGfgpQhfuHqavglpiHTCoCJHMByk
+DB_DATABASE=Taxi
+DB_SSL=false
+JWT_SECRET=supersecreto123
+```
+
+### Debug de Variables de Entorno
+La aplicación incluye logs de debug que muestran las variables de entorno detectadas al iniciar. Puedes ver estos logs en Railway para verificar que las variables se están leyendo correctamente.
+
 ## Project setup
 
 ```bash
