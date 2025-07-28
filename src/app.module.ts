@@ -12,14 +12,13 @@ import { AppController } from './app.controller';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      // Configuración para Railway MySQL
-      type: 'mysql',
-      host: 'trolley.proxy.rlwy.net',
-      port: 49619,
-      username: 'root',
-      password: 'EHpUGGfgpQhfuHqavglpiHTCoCJHMByk',
-      database: 'Taxi',
-      ssl: false,
+      type: process.env.DB_TYPE as 'mysql' || 'mysql',
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306,
+      username: process.env.DB_USERNAME || 'root',
+      password: process.env.DB_PASSWORD || '',
+      database: process.env.DB_DATABASE || 'taxi_db',
+      ssl: process.env.DB_SSL === 'true',
       autoLoadEntities: true,
       synchronize: false,
     }),

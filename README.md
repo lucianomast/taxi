@@ -21,9 +21,36 @@
   <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+# Backend Taxi API
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+API para sistema de gestión de taxis tipo Uber desarrollada con NestJS.
+
+## Configuración de Variables de Entorno
+
+Antes de ejecutar el proyecto, necesitas configurar las variables de entorno. Copia el archivo `env.example` a `.env` y configura los valores según tu entorno:
+
+```bash
+cp env.example .env
+```
+
+### Variables de Entorno Disponibles
+
+- `DB_TYPE`: Tipo de base de datos (mysql, postgres)
+- `DB_HOST`: Host de la base de datos
+- `DB_PORT`: Puerto de la base de datos
+- `DB_USERNAME`: Usuario de la base de datos
+- `DB_PASSWORD`: Contraseña de la base de datos
+- `DB_DATABASE`: Nombre de la base de datos
+- `DB_SSL`: Habilitar SSL para la conexión (true/false)
+- `JWT_SECRET`: Clave secreta para JWT
+
+### Configuraciones Predefinidas
+
+El archivo `env.example` incluye configuraciones para diferentes entornos:
+- **Desarrollo local** (XAMPP)
+- **Railway MySQL** (Producción)
+- **PlanetScale** (Producción)
+- **Supabase** (Producción)
 
 ## Project setup
 
@@ -43,6 +70,13 @@ $ npm run start:dev
 # production mode
 $ npm run start:prod
 ```
+
+## Documentación de la API
+
+Una vez que la aplicación esté corriendo, puedes acceder a la documentación de Swagger en:
+
+- **Local**: `http://localhost:3000/api/docs`
+- **Producción**: `https://tu-dominio.com/api/docs`
 
 ## Run tests
 
