@@ -11,12 +11,18 @@ import { NotificacionesModule } from './notificaciones/notificaciones.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: 'localhost',
-      port: 3306,
-      username: 'root',
-      password: '',
-      database: 'taxi_db',
+      // Configuración que funciona tanto en local como en producción
+      type: process.env.DB_TYPE === 'postgres' ? 'postgres' : 'mysql',
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '3306'),
+      username: process.env.DB_USERNAME || 'root',
+      password: process.env.DB_PASSWORD || '',
+      database: process.env.DB_DATABASE || 'taxi_db',
+      // Railway usa estas variables automáticamente
+      // DATABASE_URL, MYSQL_URL, o POSTGRES_URL
+      ssl: process.env.DB_SSL === 'true' ? {
+        rejectUnauthorized: false,
+      } : false,
       autoLoadEntities: true,
       synchronize: false,
     }),
