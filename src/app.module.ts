@@ -12,14 +12,14 @@ import { AppController } from './app.controller';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      // Configuración para Railway usando variables individuales
+      // Configuración para base de datos local (XAMPP)
       type: 'mysql',
-      host: process.env.MYSQLHOST || 'localhost',
-      port: parseInt(process.env.MYSQLPORT || '3306'),
-      username: process.env.MYSQLUSER || 'root',
-      password: process.env.MYSQLPASSWORD || '',
-      database: process.env.MYSQLDATABASE || 'railway',
-      ssl: false, // Deshabilitar SSL para Railway
+      host: 'localhost',
+      port: 3306,
+      username: 'root',
+      password: '',
+      database: 'taxi_db',
+      ssl: false,
       autoLoadEntities: true,
       synchronize: false,
     }),
