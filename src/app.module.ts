@@ -12,9 +12,13 @@ import { AppController } from './app.controller';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      // Usar la URL de conexión que Railway proporciona
+      // Configuración para Railway usando variables individuales
       type: 'mysql',
-      url: process.env.DATABASE_URL,
+      host: process.env.MYSQLHOST || 'localhost',
+      port: parseInt(process.env.MYSQLPORT || '3306'),
+      username: process.env.MYSQLUSER || 'root',
+      password: process.env.MYSQLPASSWORD || '',
+      database: process.env.MYSQLDATABASE || 'railway',
       ssl: false, // Deshabilitar SSL para Railway
       autoLoadEntities: true,
       synchronize: false,
