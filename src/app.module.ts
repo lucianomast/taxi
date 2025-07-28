@@ -12,13 +12,13 @@ import { AppController } from './app.controller';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      // Configuración para base de datos local (XAMPP)
+      // Configuración para Railway MySQL
       type: 'mysql',
-      host: 'localhost',
-      port: 3306,
+      host: 'trolley.proxy.rlwy.net',
+      port: 49619,
       username: 'root',
-      password: '',
-      database: 'taxi_db',
+      password: 'EHpUGGfgpQhfuHqavglpiHTCoCJHMByk',
+      database: 'railway',
       ssl: false,
       autoLoadEntities: true,
       synchronize: false,
