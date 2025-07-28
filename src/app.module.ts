@@ -7,6 +7,7 @@ import { FacturacionModule } from './facturacion/facturacion.module';
 import { EmpresasModule } from './empresas/empresas.module';
 import { ServiciosModule } from './servicios/servicios.module';
 import { NotificacionesModule } from './notificaciones/notificaciones.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -34,7 +35,7 @@ import { NotificacionesModule } from './notificaciones/notificaciones.module';
     ServiciosModule,
     NotificacionesModule,
   ],
-  // controllers: [],
-  // providers: [],
+  controllers: [AppController],
+  providers: [],
 })
 export class AppModule {}
