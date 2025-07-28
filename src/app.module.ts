@@ -12,18 +12,12 @@ import { AppController } from './app.controller';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      // Configuración que funciona tanto en local como en producción
-      type: process.env.DB_TYPE === 'postgres' ? 'postgres' : 'mysql',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '3306'),
-      username: process.env.DB_USERNAME || 'root',
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_DATABASE || 'taxi_db',
-      // Railway usa estas variables automáticamente
-      // DATABASE_URL, MYSQL_URL, o POSTGRES_URL
-      ssl: process.env.DB_SSL === 'true' ? {
+      // Usar la URL de conexión que Railway proporciona
+      type: 'mysql',
+      url: process.env.DATABASE_URL,
+      ssl: {
         rejectUnauthorized: false,
-      } : false,
+      },
       autoLoadEntities: true,
       synchronize: false,
     }),
