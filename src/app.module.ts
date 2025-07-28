@@ -18,7 +18,7 @@ import { AppController } from './app.controller';
       port: 49619,
       username: 'root',
       password: 'EHpUGGfgpQhfuHqavglpiHTCoCJHMByk',
-      database: 'railway',
+      database: 'Taxi',
       ssl: false,
       autoLoadEntities: true,
       synchronize: false,
