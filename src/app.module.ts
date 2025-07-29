@@ -7,6 +7,7 @@ import { FacturacionModule } from './facturacion/facturacion.module';
 import { EmpresasModule } from './empresas/empresas.module';
 import { ServiciosModule } from './servicios/servicios.module';
 import { NotificacionesModule } from './notificaciones/notificaciones.module';
+import { TarifasModule } from './tarifas/tarifas.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -30,6 +31,7 @@ import { AppController } from './app.controller';
     EmpresasModule,
     ServiciosModule,
     NotificacionesModule,
+    TarifasModule,
   ],
   controllers: [AppController],
   providers: [],
