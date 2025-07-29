@@ -6,6 +6,7 @@ import { CrearServicioDto } from './dto/crear-servicio.dto';
 import { ActualizarServicioDto } from './dto/actualizar-servicio.dto';
 import { Cliente } from '../clientes/entities/cliente.entity';
 import { Conductor } from '../conductores/entities/conductor.entity';
+import { TarifasService } from '../tarifas/tarifas.service';
 
 @Injectable()
 export class ServiciosService {
@@ -16,6 +17,7 @@ export class ServiciosService {
     private readonly clientesRepository: Repository<Cliente>,
     @InjectRepository(Conductor)
     private readonly conductoresRepository: Repository<Conductor>,
+    private readonly tarifasService: TarifasService, // Agregar servicio de tarifas
   ) {}
 
   async crear(dto: CrearServicioDto) {
@@ -29,9 +31,35 @@ export class ServiciosService {
         throw new NotFoundException('No se ha encontrado un conductor con ese id');
       }
     }
+
+    // Calcular precio automáticamente usando la API de tarifas
+    let precioCalculado: number;
+    try {
+      const resultadoPrecio = await this.tarifasService.calcularPrecio({
+        origen: dto.origen,
+        destino: dto.destino,
+        fecha: new Date().toISOString().split('T')[0], // Fecha actual
+        hora: new Date().toLocaleTimeString('es-ES', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: false 
+        }),
+        tipo_servicio: 'normal',
+        zona: 'general'
+      });
+
+      precioCalculado = resultadoPrecio.precio;
+      console.log(`💰 Precio calculado para servicio: $${precioCalculado}`);
+    } catch (error) {
+      console.error('Error calculando precio:', error);
+      // Si falla el cálculo, usar precio por defecto o el precio enviado
+      precioCalculado = dto.precio || 0;
+    }
+
     try {
       const servicio = this.serviciosRepository.create({
         ...dto,
+        precio: precioCalculado, // Usar el precio calculado
         created_at: new Date(),
       });
       return await this.serviciosRepository.save(servicio);
