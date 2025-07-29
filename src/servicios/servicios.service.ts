@@ -49,7 +49,6 @@ export class ServiciosService {
       });
 
       precioCalculado = resultadoPrecio.precio;
-      console.log(`💰 Precio calculado para servicio: $${precioCalculado}`);
     } catch (error) {
       console.error('Error calculando precio:', error);
       // Si falla el cálculo, usar precio por defecto o el precio enviado

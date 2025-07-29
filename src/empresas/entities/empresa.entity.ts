@@ -7,7 +7,7 @@ export class Empresa {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'int' })
+  @Column({ type: 'int', default: 0 })
   cc: number;
 
   @Column({ length: 100 })
@@ -43,10 +43,10 @@ export class Empresa {
   @Column({ length: 10, default: 'ACTIVO' })
   estado: string;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'date', default: () => 'CURRENT_DATE' })
   created_at: Date;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'date', default: () => 'CURRENT_DATE' })
   updated_at: Date;
 
   @Column({ type: 'date', nullable: true })

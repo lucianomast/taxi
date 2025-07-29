@@ -70,6 +70,18 @@ export class Conductor {
   @Column({ type: 'tinyint', default: 0 })
   logado: boolean;
 
+  @Column({ type: 'tinyint', default: 0 })
+  activo: boolean; // Campo principal para activación/desactivación
+
+  @Column({ length: 6, nullable: true })
+  codigoActivacion?: string; // Código de 6 dígitos para activar cuenta
+
+  @Column({ type: 'datetime', nullable: true })
+  codigoActivacionExpiracion?: Date; // Cuándo expira el código
+
+  @Column({ type: 'tinyint', default: 0 })
+  emailVerificado: boolean; // Si el email ha sido verificado
+
   @Column({ type: 'datetime', nullable: true })
   ultimaPenalizacion?: Date;
 

@@ -8,7 +8,7 @@ import { EmpresasModule } from './empresas/empresas.module';
 import { ServiciosModule } from './servicios/servicios.module';
 import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { TarifasModule } from './tarifas/tarifas.module';
-import { AppController } from './app.controller';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -22,7 +22,9 @@ import { AppController } from './app.controller';
       ssl: process.env.DB_SSL === 'true' ? true : false,
       autoLoadEntities: true,
       synchronize: false,
-      logging: true, // Habilitar logs de SQL para debug
+      logging: false, // Deshabilitar logs de SQL
+      migrations: [__dirname + '/migrations/*.ts'],
+      migrationsRun: false,
     }),
     AuthModule,
     ClientesModule,
@@ -32,8 +34,7 @@ import { AppController } from './app.controller';
     ServiciosModule,
     NotificacionesModule,
     TarifasModule,
+    EmailModule,
   ],
-  controllers: [AppController],
-  providers: [],
 })
 export class AppModule {}

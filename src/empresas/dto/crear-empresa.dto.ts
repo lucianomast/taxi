@@ -2,6 +2,11 @@ import { IsString, IsOptional, IsBoolean, IsInt } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CrearEmpresaDto {
+  @ApiProperty({ example: 0, required: false, description: 'Código de cliente (opcional)' })
+  @IsOptional()
+  @IsInt()
+  cc?: number;
+
   @ApiProperty({ example: 'DemoCorp S.A.' })
   @IsString()
   nombre: string;

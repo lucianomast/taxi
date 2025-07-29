@@ -21,9 +21,12 @@ export class EmpresasService {
       if (existe) {
         throw new BadRequestException('El nombre ya está asociado a una empresa');
       }
+      const fechaActual = new Date();
       const empresa = this.empresasRepository.create({
         ...dto,
-        created_at: new Date(),
+        cc: dto.cc || 0, // Usar valor por defecto si no se proporciona
+        created_at: fechaActual,
+        updated_at: fechaActual, // Agregar explícitamente
       });
       return await this.empresasRepository.save(empresa);
     } catch (error) {

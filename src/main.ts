@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ValidationPipe } from '@nestjs/common';
 import * as dotenv from 'dotenv';
 
 // Cargar variables de entorno
@@ -24,6 +25,13 @@ async function bootstrap() {
     credentials: true,
   });
   app.setGlobalPrefix('api'); // Prefijo global para la API
+  
+  // Configurar ValidationPipe globalmente
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  }));
 
   // Descripción general y flujo visual en Markdown
   const swaggerDescription = `

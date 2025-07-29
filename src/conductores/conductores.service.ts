@@ -5,6 +5,11 @@ import { Conductor } from './entities/conductor.entity';
 import { Empresa } from '../empresas/entities/empresa.entity';
 import { CrearConductorDto } from './dto/crear-conductor.dto';
 import { ActualizarConductorDto } from './dto/actualizar-conductor.dto';
+import { SolicitarActivacionDto } from './dto/solicitar-activacion.dto';
+import { ActivarCuentaDto } from './dto/activar-cuenta.dto';
+import { OlvidePasswordDto } from './dto/olvide-password.dto';
+import { CambiarPasswordCodigoDto } from './dto/cambiar-password-codigo.dto';
+import { EmailService } from '../email/email.service';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -14,6 +19,7 @@ export class ConductoresService {
     private readonly conductoresRepository: Repository<Conductor>,
     @InjectRepository(Empresa)
     private readonly empresasRepository: Repository<Empresa>,
+    private readonly emailService: EmailService,
   ) {}
 
   async registrar(dto: CrearConductorDto): Promise<Conductor> {
@@ -95,5 +101,217 @@ export class ConductoresService {
     const respuesta = { success: true, message: 'Contraseña actualizada correctamente' };
     console.log('Respuesta cambiar_password:', respuesta);
     return respuesta;
+  }
+
+  // Métodos para sistema de activación por email
+  async solicitarActivacion(dto: SolicitarActivacionDto) {
+    // Validar que el DTO tenga el email
+    if (!dto || !dto.email) {
+      throw new BadRequestException('El email es requerido');
+    }
+
+    const conductor = await this.conductoresRepository.findOne({ 
+      where: { 
+        email: dto.email
+      } 
+    });
+
+    if (!conductor) {
+      throw new NotFoundException('No se encontró un conductor con ese email');
+    }
+
+    // Generar código de 6 dígitos
+    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Establecer expiración (15 minutos)
+    const expiracion = new Date();
+    expiracion.setMinutes(expiracion.getMinutes() + 15);
+
+    // Guardar código en la base de datos
+    conductor.codigoActivacion = codigo;
+    conductor.codigoActivacionExpiracion = expiracion;
+    await this.conductoresRepository.save(conductor);
+
+    // Enviar email con el código
+    const emailEnviado = await this.emailService.enviarCodigoActivacion(
+      conductor.email,
+      codigo,
+      conductor.nombre
+    );
+
+    if (!emailEnviado) {
+      throw new InternalServerErrorException('Error al enviar el email de activación');
+    }
+
+    return {
+      message: 'Código de activación enviado al email',
+      expiracion: expiracion
+    };
+  }
+
+  async activarCuenta(dto: ActivarCuentaDto) {
+    // Validar que el DTO tenga los datos requeridos
+    if (!dto || !dto.email) {
+      throw new BadRequestException('El email es requerido');
+    }
+    if (!dto.codigo) {
+      throw new BadRequestException('El código es requerido');
+    }
+
+    const conductor = await this.conductoresRepository.findOne({ 
+      where: { email: dto.email } 
+    });
+
+    if (!conductor) {
+      throw new NotFoundException('No se encontró un conductor con ese email');
+    }
+
+    // Verificar que el código coincida
+    if (conductor.codigoActivacion !== dto.codigo) {
+      throw new BadRequestException('Código de activación incorrecto');
+    }
+
+    // Verificar que no haya expirado
+    if (conductor.codigoActivacionExpiracion && conductor.codigoActivacionExpiracion < new Date()) {
+      throw new BadRequestException('Código de activación expirado');
+    }
+
+    // Activar cuenta (mantener la contraseña original)
+    conductor.activo = true;
+    conductor.emailVerificado = true;
+    conductor.codigoActivacion = undefined;
+    conductor.codigoActivacionExpiracion = undefined;
+    conductor.updated_at = new Date();
+
+    await this.conductoresRepository.save(conductor);
+
+    // Enviar email de confirmación
+    await this.emailService.enviarConfirmacionActivacion(
+      conductor.email,
+      conductor.nombre
+    );
+
+    return {
+      message: 'Cuenta activada correctamente',
+      success: true
+    };
+  }
+
+  async verificarCodigo(email: string, codigo: string) {
+    const conductor = await this.conductoresRepository.findOne({ 
+      where: { email } 
+    });
+
+    if (!conductor) {
+      throw new NotFoundException('No se encontró un conductor con ese email');
+    }
+
+    if (conductor.codigoActivacion !== codigo) {
+      return { valido: false, message: 'Código incorrecto' };
+    }
+
+    if (conductor.codigoActivacionExpiracion && conductor.codigoActivacionExpiracion < new Date()) {
+      return { valido: false, message: 'Código expirado' };
+    }
+
+    return { valido: true, message: 'Código válido' };
+  }
+
+  // Métodos para recuperación de contraseña
+  async olvidePassword(dto: OlvidePasswordDto) {
+    // Validar que el DTO tenga el email
+    if (!dto || !dto.email) {
+      throw new BadRequestException('El email es requerido');
+    }
+
+    const conductor = await this.conductoresRepository.findOne({ 
+      where: { email: dto.email } 
+    });
+
+    if (!conductor) {
+      throw new NotFoundException('No se encontró un conductor con ese email');
+    }
+
+    // Generar código de 6 dígitos
+    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Establecer expiración (15 minutos)
+    const expiracion = new Date();
+    expiracion.setMinutes(expiracion.getMinutes() + 15);
+
+    // Guardar código en la base de datos
+    conductor.codigoActivacion = codigo;
+    conductor.codigoActivacionExpiracion = expiracion;
+    await this.conductoresRepository.save(conductor);
+
+    // Enviar email con el código
+    const emailEnviado = await this.emailService.enviarCodigoRecuperacion(
+      conductor.email,
+      codigo,
+      conductor.nombre
+    );
+
+    if (!emailEnviado) {
+      throw new InternalServerErrorException('Error al enviar el email de recuperación');
+    }
+
+    return {
+      message: 'Código de recuperación enviado al email',
+      expiracion: expiracion
+    };
+  }
+
+  async cambiarPasswordConCodigo(dto: CambiarPasswordCodigoDto) {
+    // Validar que el DTO tenga los datos requeridos
+    if (!dto || !dto.email) {
+      throw new BadRequestException('El email es requerido');
+    }
+    if (!dto.codigo) {
+      throw new BadRequestException('El código es requerido');
+    }
+    if (!dto.nuevaPassword) {
+      throw new BadRequestException('La nueva contraseña es requerida');
+    }
+
+    const conductor = await this.conductoresRepository.findOne({ 
+      where: { email: dto.email } 
+    });
+
+    if (!conductor) {
+      throw new NotFoundException('No se encontró un conductor con ese email');
+    }
+
+    // Verificar que el código coincida
+    if (conductor.codigoActivacion !== dto.codigo) {
+      throw new BadRequestException('Código de recuperación incorrecto');
+    }
+
+    // Verificar que no haya expirado
+    if (conductor.codigoActivacionExpiracion && conductor.codigoActivacionExpiracion < new Date()) {
+      throw new BadRequestException('Código de recuperación expirado');
+    }
+
+    // Hashear nueva contraseña
+    const salt = await bcrypt.genSalt(10);
+    const nuevaPasswordHash = await bcrypt.hash(dto.nuevaPassword, salt);
+
+    // Cambiar contraseña y limpiar código
+    conductor.password = nuevaPasswordHash;
+    conductor.codigoActivacion = undefined;
+    conductor.codigoActivacionExpiracion = undefined;
+    conductor.updated_at = new Date();
+
+    await this.conductoresRepository.save(conductor);
+
+    // Enviar email de confirmación
+    await this.emailService.enviarConfirmacionCambioPassword(
+      conductor.email,
+      conductor.nombre
+    );
+
+    return {
+      message: 'Contraseña cambiada correctamente',
+      success: true
+    };
   }
 } 
