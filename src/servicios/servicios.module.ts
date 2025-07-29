@@ -6,11 +6,13 @@ import { Servicio } from './entities/servicio.entity';
 import { Cliente } from '../clientes/entities/cliente.entity';
 import { Conductor } from '../conductores/entities/conductor.entity';
 import { TarifasModule } from '../tarifas/tarifas.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Servicio, Cliente, Conductor]),
     TarifasModule, // Importar módulo de tarifas
+    AuthModule, // Importar módulo de auth para el guard
   ],
   controllers: [ServiciosController],
   providers: [ServiciosService],

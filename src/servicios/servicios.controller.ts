@@ -1,11 +1,14 @@
-import { Controller, Post, Body, Put, Param, Get, Query } from '@nestjs/common';
+import { Controller, Post, Body, Put, Param, Get, Query, UseGuards } from '@nestjs/common';
 import { ServiciosService } from './servicios.service';
 import { CrearServicioDto } from './dto/crear-servicio.dto';
 import { ActualizarServicioDto } from './dto/actualizar-servicio.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('servicios')
 @Controller('servicios')
+@UseGuards(JwtAuthGuard) // Proteger todo el controlador
+@ApiBearerAuth() // Agregar autenticación Bearer en Swagger
 export class ServiciosController {
   constructor(private readonly serviciosService: ServiciosService) {}
 
