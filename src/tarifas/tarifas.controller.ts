@@ -1,13 +1,13 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
-  Delete, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
   ParseIntPipe,
-  Query 
+  Query
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { TarifasService } from './tarifas.service';
@@ -126,5 +126,20 @@ export class TarifasController {
   @ApiResponse({ status: 200, description: 'Precio calculado exitosamente' })
   calcularPrecio(@Body() calcularPrecioDto: CalcularPrecioDto) {
     return this.tarifasService.calcularPrecio(calcularPrecioDto);
+  }
+
+  // Endpoints para geolocalización
+  @Get('geolocalizacion/validar')
+  @ApiOperation({ summary: 'Validar si una dirección es válida' })
+  @ApiResponse({ status: 200, description: 'Resultado de validación' })
+  validarDireccion(@Query('direccion') direccion: string) {
+    return this.tarifasService.validarDireccion(direccion);
+  }
+
+  @Get('geolocalizacion/informacion')
+  @ApiOperation({ summary: 'Obtener información detallada de una dirección' })
+  @ApiResponse({ status: 200, description: 'Información de la dirección' })
+  obtenerInformacionDireccion(@Query('direccion') direccion: string) {
+    return this.tarifasService.obtenerInformacionDireccion(direccion);
   }
 } 

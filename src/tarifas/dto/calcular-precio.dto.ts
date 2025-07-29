@@ -1,15 +1,19 @@
-import { IsNumber, IsString, IsOptional, IsDate } from 'class-validator';
+import { IsString, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CalcularPrecioDto {
-  @ApiProperty({ description: 'Distancia en kilómetros' })
-  @IsNumber()
-  distancia_km: number;
+  @ApiProperty({ description: 'Dirección de origen' })
+  @IsString()
+  origen: string;
 
-  @ApiProperty({ description: 'Fecha del viaje', required: false })
-  @IsDate()
+  @ApiProperty({ description: 'Dirección de destino' })
+  @IsString()
+  destino: string;
+
+  @ApiProperty({ description: 'Fecha del viaje (YYYY-MM-DD)', required: false })
+  @IsString()
   @IsOptional()
-  fecha?: Date;
+  fecha?: string;
 
   @ApiProperty({ description: 'Hora del viaje (HH:MM)', required: false })
   @IsString()
