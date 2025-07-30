@@ -8,6 +8,7 @@ import { Cliente } from '../clientes/entities/cliente.entity';
 import { Conductor } from '../conductores/entities/conductor.entity';
 import { ConductorPosicion } from '../conductores/entities/conductor-posicion.entity';
 import { TarifasService } from '../tarifas/tarifas.service';
+import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import * as NodeGeocoder from 'node-geocoder';
 
 @Injectable()
@@ -24,6 +25,7 @@ export class ServiciosService {
     @InjectRepository(ConductorPosicion)
     private readonly conductorPosicionRepository: Repository<ConductorPosicion>,
     private readonly tarifasService: TarifasService, // Agregar servicio de tarifas
+    private readonly notificacionesService: NotificacionesService, // Agregar servicio de notificaciones
   ) {}
 
   async crear(dto: CrearServicioDto) {
@@ -103,7 +105,33 @@ export class ServiciosService {
         precio: precioCalculado, // Usar el precio calculado
         created_at: new Date(),
       });
-      return await this.serviciosRepository.save(servicio);
+      
+      const servicioGuardado = await this.serviciosRepository.save(servicio);
+      
+      // Enviar notificación push al conductor si está asignado
+      if (servicioGuardado.conductorId) {
+        try {
+          this.logger.log(`📱 Enviando notificación push al conductor ${servicioGuardado.conductorId} sobre servicio ${servicioGuardado.id}`);
+          
+          await this.notificacionesService.enviarNotificacionServicioAsignado(
+            servicioGuardado.conductorId,
+            servicioGuardado.id,
+            {
+              origen: servicioGuardado.origen,
+              destino: servicioGuardado.destino,
+              precio: servicioGuardado.precio,
+              fecha: servicioGuardado.created_at
+            }
+          );
+          
+          this.logger.log(`✅ Notificación push enviada exitosamente al conductor ${servicioGuardado.conductorId}`);
+        } catch (error) {
+          this.logger.error(`❌ Error enviando notificación push al conductor ${servicioGuardado.conductorId}:`, error);
+          // No lanzar error para no interrumpir la creación del servicio
+        }
+      }
+      
+      return servicioGuardado;
     } catch (error) {
       if (error instanceof QueryFailedError && error.message.includes("doesn't exist")) {
         throw new InternalServerErrorException('La tabla servicios no existe en la base de datos.');

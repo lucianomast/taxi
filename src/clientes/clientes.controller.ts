@@ -167,7 +167,7 @@ export class ClientesController {
   @Get('get_location')
   @ApiOperation({ 
     summary: 'Obtener coordenadas de una dirección',
-    description: 'Convierte una dirección en coordenadas de latitud y longitud'
+    description: 'Convierte una dirección en coordenadas de latitud y longitud usando OpenStreetMap/Nominatim. Utilizado automáticamente al crear servicios.'
   })
   @ApiResponse({
     status: 200,

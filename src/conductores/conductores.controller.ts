@@ -58,6 +58,28 @@ export class ConductoresController {
   }
 
   @Put('actualizar/:id')
+  @ApiOperation({ summary: 'Actualizar datos de un conductor existente' })
+  @ApiBody({ type: ActualizarConductorDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Conductor actualizado correctamente',
+    schema: {
+      example: {
+        id: 2,
+        nombre: 'Martín',
+        apellidos: 'Domínguez',
+        email: 'martin@example.com',
+        telefono: '664001824',
+        matricula: '1377CVX',
+        marcaCoche: 'Tesla',
+        modeloCoche: 's3',
+        estado: 10,
+        activo: true,
+        updated_at: '2024-01-15T12:00:00.000Z'
+      }
+    }
+  })
+  @ApiResponse({ status: 404, description: 'Conductor no encontrado' })
   actualizar(@Param('id') id: number, @Body() dto: ActualizarConductorDto) {
     return this.conductoresService.actualizar(id, dto);
   }
@@ -222,7 +244,7 @@ export class ConductoresController {
   @Get('posiciones')
   @ApiOperation({ 
     summary: 'Obtener posiciones de todos los conductores',
-    description: 'Obtiene las posiciones de todos los conductores activos para mostrar en un mapa'
+    description: 'Obtiene las posiciones de todos los conductores activos para mostrar en un mapa. Solo incluye conductores con estado activo.'
   })
   @ApiResponse({
     status: 200,
@@ -259,7 +281,7 @@ export class ConductoresController {
   @Get('posicion/:conductorId')
   @ApiOperation({ 
     summary: 'Obtener posición de un conductor específico',
-    description: 'Obtiene la posición de un conductor específico por su ID'
+    description: 'Obtiene la posición de un conductor específico por su ID. Retorna 404 si el conductor no tiene posición registrada.'
   })
   @ApiResponse({
     status: 200,
@@ -295,7 +317,7 @@ export class ConductoresController {
   @Post('penalizar')
   @ApiOperation({ 
     summary: 'Penalizar un conductor',
-    description: 'Penaliza un conductor manualmente (5 min) o automáticamente (20 min)'
+    description: 'Penaliza un conductor manualmente (5 min) o automáticamente (20 min). Los conductores penalizados no aparecen en la lista de disponibles.'
   })
   @ApiBody({ type: PenalizarConductorDto })
   @ApiResponse({
@@ -347,7 +369,7 @@ export class ConductoresController {
   @Get('disponibles')
   @ApiOperation({ 
     summary: 'Obtener conductores disponibles',
-    description: 'Obtiene la lista de conductores disponibles (no penalizados)'
+    description: 'Obtiene la lista de conductores disponibles (no penalizados). Excluye automáticamente conductores con penalización activa.'
   })
   @ApiResponse({
     status: 200,

@@ -20,7 +20,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @ApiTags('Tarifas')
 @Controller('tarifas')
 @UseGuards(JwtAuthGuard) // Proteger todo el controlador
-@ApiBearerAuth() // Agregar autenticación Bearer en Swagger
+@ApiBearerAuth('JWT-auth') // Agregar autenticación Bearer en Swagger
 export class TarifasController {
   constructor(private readonly tarifasService: TarifasService) {}
 

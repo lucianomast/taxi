@@ -8,13 +8,58 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @ApiTags('servicios')
 @Controller('servicios')
 @UseGuards(JwtAuthGuard) // Proteger todo el controlador
-@ApiBearerAuth() // Agregar autenticación Bearer en Swagger
+@ApiBearerAuth('JWT-auth') // Agregar autenticación Bearer en Swagger
 export class ServiciosController {
   constructor(private readonly serviciosService: ServiciosService) {}
 
   @Post('crear')
-  @ApiOperation({ summary: 'Crear un nuevo servicio' })
-  @ApiBody({ type: CrearServicioDto })
+  @ApiOperation({ 
+    summary: 'Crear un nuevo servicio',
+    description: 'Crea un servicio con geocodificación automática de direcciones y cálculo automático de precio. Solo necesitas enviar clienteId, origen, destino, estado, adminId. Los campos precio, coordenadas y conductorId se calculan/asignan automáticamente.'
+  })
+  @ApiBody({ 
+    schema: {
+      type: 'object',
+      properties: {
+        clienteId: { type: 'number', example: 58, description: 'ID del cliente' },
+        origen: { type: 'string', example: 'Santa Teresa 2227, Morón', description: 'Dirección de origen' },
+        destino: { type: 'string', example: 'rafael castillo', description: 'Dirección de destino' },
+        estado: { type: 'number', example: 10, description: 'Estado del servicio' },
+        adminId: { type: 'number', example: 1, description: 'ID del admin' },
+        inmediato: { type: 'boolean', example: true, description: 'Asignar conductor automáticamente' },
+        observaciones: { type: 'string', example: 'Cliente VIP', description: 'Observaciones del servicio' },
+        comentarioServicio: { type: 'string', example: '', description: 'Comentario del servicio' },
+        formaPago: { type: 'string', example: 'Efectivo', description: 'Forma de pago' }
+      },
+      required: ['clienteId', 'origen', 'destino', 'estado', 'adminId']
+    },
+    examples: {
+      'Ejemplo mínimo': {
+        summary: 'Solo campos requeridos',
+        value: {
+          clienteId: 58,
+          origen: 'Santa Teresa 2227, Morón',
+          destino: 'rafael castillo',
+          estado: 10,
+          adminId: 1
+        }
+      },
+      'Ejemplo completo': {
+        summary: 'Con campos opcionales',
+        value: {
+          clienteId: 58,
+          origen: 'Santa Teresa 2227, Morón',
+          destino: 'rafael castillo',
+          estado: 10,
+          adminId: 1,
+          inmediato: true,
+          observaciones: 'Cliente VIP',
+          comentarioServicio: '',
+          formaPago: 'Efectivo'
+        }
+      }
+    }
+  })
   @ApiResponse({
     status: 201,
     description: 'Servicio creado correctamente',
@@ -23,18 +68,18 @@ export class ServiciosController {
         id: 1100,
         clienteId: 58,
         conductorId: 2,
-        origen: 'Origen ficticio #8',
-        destino: 'Destino ficticio #193',
+        origen: 'Santa Teresa 2227, Morón',
+        destino: 'rafael castillo',
         origenLat: '40.345247',
         origenLon: '-3.819113',
         destinoLat: '40.403342',
         destinoLon: '-3.738408',
-        estado: 40,
-        adminId: 22,
-        inmediato: false,
-        observaciones: null,
-        comentarioServicio: 'servicio simulado para pruebas',
-        formaPago: 'T',
+        estado: 10,
+        adminId: 1,
+        inmediato: true,
+        observaciones: 'Cliente VIP',
+        comentarioServicio: '',
+        formaPago: 'Efectivo',
         precio: 22.43,
         created_at: '2024-07-25T12:00:00.000Z',
         updated_at: null,
@@ -189,7 +234,7 @@ export class ServiciosController {
   @Get('get_tiempo_estimado')
   @ApiOperation({ 
     summary: 'Obtener tiempo estimado de llegada del conductor más cercano',
-    description: 'Verifica la disponibilidad de conductores y calcula el tiempo estimado de llegada del conductor más cercano'
+    description: 'Verifica la disponibilidad de conductores según criterios específicos (activo, disponible, no penalizado, con posición) y calcula el tiempo estimado de llegada del conductor más cercano al origen del servicio.'
   })
   @ApiResponse({
     status: 200,
