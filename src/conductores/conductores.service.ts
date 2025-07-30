@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, InternalServerError
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, QueryFailedError } from 'typeorm';
 import { Conductor } from './entities/conductor.entity';
+import { ConductorPosicion } from './entities/conductor-posicion.entity';
 import { Empresa } from '../empresas/entities/empresa.entity';
 import { CrearConductorDto } from './dto/crear-conductor.dto';
 import { ActualizarConductorDto } from './dto/actualizar-conductor.dto';
@@ -9,6 +10,7 @@ import { SolicitarActivacionDto } from './dto/solicitar-activacion.dto';
 import { ActivarCuentaDto } from './dto/activar-cuenta.dto';
 import { OlvidePasswordDto } from './dto/olvide-password.dto';
 import { CambiarPasswordCodigoDto } from './dto/cambiar-password-codigo.dto';
+import { GuardarCoordenadasDto } from './dto/guardar-coordenadas.dto';
 import { EmailService } from '../email/email.service';
 import * as bcrypt from 'bcrypt';
 
@@ -17,6 +19,8 @@ export class ConductoresService {
   constructor(
     @InjectRepository(Conductor)
     private readonly conductoresRepository: Repository<Conductor>,
+    @InjectRepository(ConductorPosicion)
+    private readonly conductorPosicionRepository: Repository<ConductorPosicion>,
     @InjectRepository(Empresa)
     private readonly empresasRepository: Repository<Empresa>,
     private readonly emailService: EmailService,
@@ -312,6 +316,141 @@ export class ConductoresService {
     return {
       message: 'Contraseña cambiada correctamente',
       success: true
+    };
+  }
+
+  async guardarCoordenadas(dto: GuardarCoordenadasDto): Promise<ConductorPosicion> {
+    // Verificar que el conductor existe
+    const conductor = await this.conductoresRepository.findOne({ 
+      where: { id: dto.conductorId } 
+    });
+
+    if (!conductor) {
+      throw new NotFoundException('No se encontró un conductor con ese ID');
+    }
+
+    // Buscar si ya existe una posición para este conductor
+    let posicion = await this.conductorPosicionRepository.findOne({ 
+      where: { conductorId: dto.conductorId } 
+    });
+
+    const now = new Date();
+
+    if (posicion) {
+      // Actualizar posición existente
+      posicion.lat = dto.lat || '';
+      posicion.lon = dto.lon || '';
+      posicion.updated_at = now;
+    } else {
+      // Crear nueva posición
+      posicion = this.conductorPosicionRepository.create({
+        conductorId: dto.conductorId,
+        lat: dto.lat || '',
+        lon: dto.lon || '',
+        created_at: now,
+        updated_at: now
+      });
+    }
+
+    return await this.conductorPosicionRepository.save(posicion);
+  }
+
+  async obtenerPosicionesConductores(): Promise<any[]> {
+    // Obtener todas las posiciones con información del conductor
+    const posiciones = await this.conductorPosicionRepository
+      .createQueryBuilder('posicion')
+      .leftJoinAndSelect('posicion.conductor', 'conductor')
+      .select([
+        'posicion.id',
+        'posicion.lat',
+        'posicion.lon',
+        'posicion.updated_at',
+        'conductor.id',
+        'conductor.nombre',
+        'conductor.apellidos',
+        'conductor.telefono',
+        'conductor.activo',
+        'conductor.estado',
+        'conductor.marcaCoche',
+        'conductor.modeloCoche',
+        'conductor.matricula'
+      ])
+      .where('posicion.lat != :emptyLat', { emptyLat: '' })
+      .andWhere('posicion.lon != :emptyLon', { emptyLon: '' })
+      .andWhere('conductor.activo = :activo', { activo: true })
+      .orderBy('posicion.updated_at', 'DESC')
+      .getMany();
+
+    // Transformar los datos para el frontend
+    return posiciones.map(posicion => ({
+      id: posicion.id,
+      conductorId: posicion.conductor.id,
+      lat: parseFloat(posicion.lat),
+      lon: parseFloat(posicion.lon),
+      updated_at: posicion.updated_at,
+      conductor: {
+        id: posicion.conductor.id,
+        nombre: posicion.conductor.nombre,
+        apellidos: posicion.conductor.apellidos,
+        telefono: posicion.conductor.telefono,
+        activo: posicion.conductor.activo,
+        estado: posicion.conductor.estado,
+        vehiculo: {
+          marca: posicion.conductor.marcaCoche,
+          modelo: posicion.conductor.modeloCoche,
+          matricula: posicion.conductor.matricula
+        }
+      }
+    }));
+  }
+
+  async obtenerPosicionConductor(conductorId: number): Promise<any> {
+    const posicion = await this.conductorPosicionRepository
+      .createQueryBuilder('posicion')
+      .leftJoinAndSelect('posicion.conductor', 'conductor')
+      .select([
+        'posicion.id',
+        'posicion.lat',
+        'posicion.lon',
+        'posicion.updated_at',
+        'conductor.id',
+        'conductor.nombre',
+        'conductor.apellidos',
+        'conductor.telefono',
+        'conductor.activo',
+        'conductor.estado',
+        'conductor.marcaCoche',
+        'conductor.modeloCoche',
+        'conductor.matricula'
+      ])
+      .where('posicion.conductorId = :conductorId', { conductorId })
+      .andWhere('posicion.lat != :emptyLat', { emptyLat: '' })
+      .andWhere('posicion.lon != :emptyLon', { emptyLon: '' })
+      .getOne();
+
+    if (!posicion) {
+      throw new NotFoundException('No se encontró posición para este conductor');
+    }
+
+    return {
+      id: posicion.id,
+      conductorId: posicion.conductor.id,
+      lat: parseFloat(posicion.lat),
+      lon: parseFloat(posicion.lon),
+      updated_at: posicion.updated_at,
+      conductor: {
+        id: posicion.conductor.id,
+        nombre: posicion.conductor.nombre,
+        apellidos: posicion.conductor.apellidos,
+        telefono: posicion.conductor.telefono,
+        activo: posicion.conductor.activo,
+        estado: posicion.conductor.estado,
+        vehiculo: {
+          marca: posicion.conductor.marcaCoche,
+          modelo: posicion.conductor.modeloCoche,
+          matricula: posicion.conductor.matricula
+        }
+      }
     };
   }
 } 

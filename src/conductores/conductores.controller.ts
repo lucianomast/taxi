@@ -6,6 +6,7 @@ import { SolicitarActivacionDto } from './dto/solicitar-activacion.dto';
 import { ActivarCuentaDto } from './dto/activar-cuenta.dto';
 import { OlvidePasswordDto } from './dto/olvide-password.dto';
 import { CambiarPasswordCodigoDto } from './dto/cambiar-password-codigo.dto';
+import { GuardarCoordenadasDto } from './dto/guardar-coordenadas.dto';
 import { Request } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 // import { AuthGuard } from '../auth/auth.guard'; // Descomenta si tienes un guard de autenticación
@@ -189,5 +190,104 @@ export class ConductoresController {
   @ApiResponse({ status: 404, description: 'Conductor no encontrado' })
   cambiarPasswordConCodigo(@Body() dto: CambiarPasswordCodigoDto) {
     return this.conductoresService.cambiarPasswordConCodigo(dto);
+  }
+
+  @Post('guardar_coordenadas')
+  @ApiOperation({ 
+    summary: 'Guardar coordenadas de un conductor',
+    description: 'Guarda o actualiza las coordenadas de latitud y longitud de un conductor'
+  })
+  @ApiBody({ type: GuardarCoordenadasDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Coordenadas guardadas correctamente',
+    schema: {
+      example: {
+        id: 1,
+        conductorId: 1,
+        lat: '40.4168',
+        lon: '-3.7038',
+        created_at: '2024-01-15T12:00:00.000Z',
+        updated_at: '2024-01-15T12:00:00.000Z'
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Datos inválidos' })
+  @ApiResponse({ status: 404, description: 'Conductor no encontrado' })
+  guardarCoordenadas(@Body() dto: GuardarCoordenadasDto) {
+    return this.conductoresService.guardarCoordenadas(dto);
+  }
+
+  @Get('posiciones')
+  @ApiOperation({ 
+    summary: 'Obtener posiciones de todos los conductores',
+    description: 'Obtiene las posiciones de todos los conductores activos para mostrar en un mapa'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de posiciones de conductores',
+    schema: {
+      example: [
+        {
+          id: 1,
+          conductorId: 1,
+          lat: 40.4168,
+          lon: -3.7038,
+          updated_at: '2024-01-15T12:00:00.000Z',
+          conductor: {
+            id: 1,
+            nombre: 'Juan',
+            apellidos: 'Pérez',
+            telefono: '664001824',
+            activo: true,
+            estado: 10,
+            vehiculo: {
+              marca: 'Tesla',
+              modelo: 'Model 3',
+              matricula: '1377CVX'
+            }
+          }
+        }
+      ]
+    }
+  })
+  obtenerPosicionesConductores() {
+    return this.conductoresService.obtenerPosicionesConductores();
+  }
+
+  @Get('posicion/:conductorId')
+  @ApiOperation({ 
+    summary: 'Obtener posición de un conductor específico',
+    description: 'Obtiene la posición de un conductor específico por su ID'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Posición del conductor',
+    schema: {
+      example: {
+        id: 1,
+        conductorId: 1,
+        lat: 40.4168,
+        lon: -3.7038,
+        updated_at: '2024-01-15T12:00:00.000Z',
+        conductor: {
+          id: 1,
+          nombre: 'Juan',
+          apellidos: 'Pérez',
+          telefono: '664001824',
+          activo: true,
+          estado: 10,
+          vehiculo: {
+            marca: 'Tesla',
+            modelo: 'Model 3',
+            matricula: '1377CVX'
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 404, description: 'Conductor no encontrado o sin posición' })
+  obtenerPosicionConductor(@Param('conductorId') conductorId: number) {
+    return this.conductoresService.obtenerPosicionConductor(conductorId);
   }
 } 
