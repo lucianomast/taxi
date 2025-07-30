@@ -115,6 +115,8 @@ export class ConductoresService {
       throw new BadRequestException('El email es requerido');
     }
 
+    console.log(`🔍 Buscando conductor con email: ${dto.email}`);
+
     const conductor = await this.conductoresRepository.findOne({ 
       where: { 
         email: dto.email
@@ -122,11 +124,15 @@ export class ConductoresService {
     });
 
     if (!conductor) {
+      console.log(`❌ No se encontró conductor con email: ${dto.email}`);
       throw new NotFoundException('No se encontró un conductor con ese email');
     }
 
+    console.log(`✅ Conductor encontrado: ${conductor.nombre} ${conductor.apellidos}`);
+
     // Generar código de 6 dígitos
     const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log(`🔢 Código generado: ${codigo}`);
     
     // Establecer expiración (15 minutos)
     const expiracion = new Date();
@@ -136,8 +142,10 @@ export class ConductoresService {
     conductor.codigoActivacion = codigo;
     conductor.codigoActivacionExpiracion = expiracion;
     await this.conductoresRepository.save(conductor);
+    console.log(`💾 Código guardado en base de datos`);
 
     // Enviar email con el código
+    console.log(`📧 Intentando enviar email a: ${conductor.email}`);
     const emailEnviado = await this.emailService.enviarCodigoActivacion(
       conductor.email,
       codigo,
@@ -145,9 +153,11 @@ export class ConductoresService {
     );
 
     if (!emailEnviado) {
+      console.log(`❌ Falló el envío de email a: ${conductor.email}`);
       throw new InternalServerErrorException('Error al enviar el email de activación');
     }
 
+    console.log(`✅ Email enviado exitosamente a: ${conductor.email}`);
     return {
       message: 'Código de activación enviado al email',
       expiracion: expiracion

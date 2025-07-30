@@ -1,18 +1,26 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Resend } from 'resend';
 
 @Injectable()
 export class EmailService {
   private resend: Resend;
+  private readonly logger = new Logger(EmailService.name);
 
   constructor() {
-    this.resend = new Resend('re_GdNFSwpN_2G9GvdamwSHjiSQVE5GR1m58');
+    // Usar variable de entorno o fallback a la key hardcodeada
+    const apiKey = process.env.RESEND_API_KEY || 're_GdNFSwpN_2G9GvdamwSHjiSQVE5GR1m58';
+    this.resend = new Resend(apiKey);
+    
+    this.logger.log(`📧 EmailService inicializado`);
+    this.logger.log(`🔑 API Key configurada: ${apiKey ? 'Sí' : 'No'}`);
   }
 
   async enviarCodigoActivacion(email: string, codigo: string, nombre: string): Promise<boolean> {
     try {
-      await this.resend.emails.send({
-        from: 'onboarding@resend.dev',
+      this.logger.log(`📧 Intentando enviar código de activación a: ${email}`);
+      
+      const result = await this.resend.emails.send({
+        from: 'onboarding@resend.dev', // Usar dominio verificado de Resend
         to: email,
         subject: 'Código de Activación - Taxi App',
         html: `
@@ -32,9 +40,17 @@ export class EmailService {
           </div>
         `,
       });
+      
+      this.logger.log(`✅ Email enviado exitosamente a: ${email}`);
+      this.logger.log(`📋 ID del email: ${result.data?.id || 'N/A'}`);
       return true;
     } catch (error) {
-      console.error('Error enviando email:', error);
+      this.logger.error(`❌ Error enviando email a ${email}:`, error);
+      this.logger.error(`🔍 Detalles del error:`, {
+        message: error.message,
+        code: error.code,
+        statusCode: error.statusCode
+      });
       return false;
     }
   }
@@ -97,7 +113,9 @@ export class EmailService {
 
   async enviarConfirmacionCambioPassword(email: string, nombre: string): Promise<boolean> {
     try {
-      await this.resend.emails.send({
+      this.logger.log(`📧 Enviando confirmación de cambio de password a: ${email}`);
+      
+      const result = await this.resend.emails.send({
         from: 'onboarding@resend.dev',
         to: email,
         subject: 'Contraseña Cambiada - Taxi App',
@@ -114,9 +132,11 @@ export class EmailService {
           </div>
         `,
       });
+      
+      this.logger.log(`✅ Email de confirmación enviado a: ${email}`);
       return true;
     } catch (error) {
-      console.error('Error enviando email de confirmación de cambio:', error);
+      this.logger.error(`❌ Error enviando email de confirmación a ${email}:`, error);
       return false;
     }
   }
