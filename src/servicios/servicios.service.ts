@@ -77,6 +77,22 @@ export class ServiciosService {
       precioCalculado = dto.precio || 0;
     }
 
+    // Si es servicio inmediato y no se proporciona conductorId, buscar conductor automáticamente
+    if (dto.inmediato && !dto.conductorId) {
+      try {
+        console.log('🔍 Buscando conductor para servicio inmediato...');
+        const resultadoTiempo = await this.getTiempoEstimado(true, dto.origen);
+        dto.conductorId = resultadoTiempo.conductor.id;
+        console.log(`✅ Conductor asignado automáticamente: ${resultadoTiempo.conductor.nombre} ${resultadoTiempo.conductor.apellidos} (ID: ${resultadoTiempo.conductor.id})`);
+        console.log(`⏱️ Tiempo estimado de llegada: ${resultadoTiempo.duracionText}`);
+      } catch (error) {
+        console.error('❌ Error asignando conductor automáticamente:', error.message);
+        throw new NotFoundException('No se pudo asignar un conductor automáticamente. No hay conductores disponibles para servicio inmediato.');
+      }
+    }
+
+
+
     try {
       const servicio = this.serviciosRepository.create({
         ...dto,
@@ -175,7 +191,7 @@ export class ServiciosService {
   /**
    * Obtiene el tiempo estimado de llegada del conductor más cercano
    */
-  async getTiempoEstimado(inmediato: boolean = false): Promise<any> {
+  async getTiempoEstimado(inmediato: boolean = false, origen?: string): Promise<any> {
     try {
       // Obtener la fecha actual para verificar penalizaciones
       const ahora = new Date();
@@ -189,6 +205,7 @@ export class ServiciosService {
         .andWhere('conductor.activoParaInmediatos = :activoParaInmediatos', { activoParaInmediatos: 1 }) // Activo para inmediatos
         .andWhere('conductor.matricula != :matricula', { matricula: '' }) // Con matrícula
         .andWhere('conductor.logado = :logado', { logado: 1 }) // Logado
+        .andWhere('conductor.activo = :activo', { activo: true }) // Activo
         .andWhere('(conductor.ultimaPenalizacion IS NULL OR conductor.ultimaPenalizacion < :ahora)', { ahora }) // No penalizado
         .andWhere('posicion.id IS NOT NULL'); // Con posición registrada
 
@@ -198,13 +215,65 @@ export class ServiciosService {
         throw new NotFoundException('No hay conductores disponibles en este momento');
       }
 
-      // Seleccionar el primer conductor disponible
-      const conductorSeleccionado = conductoresDisponibles[0];
+      // Seleccionar el conductor más cercano si se proporciona origen
+      let conductorSeleccionado = conductoresDisponibles[0];
       
-      // Simular tiempo de llegada
-      const tiempoEstimado = inmediato ? 
-        Math.floor(Math.random() * 300) + 300 : // 5-10 minutos para inmediato
-        Math.floor(Math.random() * 600) + 600;  // 10-20 minutos para no inmediato
+      if (origen) {
+        // Calcular distancia desde cada conductor hasta el origen
+        let menorDistancia = Infinity;
+        let conductorMasCercano = conductorSeleccionado;
+
+        for (const conductor of conductoresDisponibles) {
+          if (conductor.posicion && conductor.posicion.lat && conductor.posicion.lon) {
+            try {
+              // Calcular distancia usando las coordenadas reales del conductor
+              const distancia = await this.calcularDistanciaDesdeConductor(
+                parseFloat(conductor.posicion.lat),
+                parseFloat(conductor.posicion.lon),
+                origen
+              );
+
+              if (distancia < menorDistancia) {
+                menorDistancia = distancia;
+                conductorMasCercano = conductor;
+              }
+            } catch (error) {
+              console.error(`Error calculando distancia para conductor ${conductor.id}:`, error);
+            }
+          }
+        }
+
+        conductorSeleccionado = conductorMasCercano;
+      }
+
+      // Calcular tiempo estimado basado en distancia real desde la posición del conductor
+      let tiempoEstimado: number;
+      if (origen && conductorSeleccionado.posicion) {
+        try {
+          const distancia = await this.calcularDistanciaDesdeConductor(
+            parseFloat(conductorSeleccionado.posicion.lat),
+            parseFloat(conductorSeleccionado.posicion.lon),
+            origen
+          );
+          
+          // Velocidad promedio en ciudad: 30 km/h = 0.5 km/min
+          const velocidadKmMin = 0.5;
+          tiempoEstimado = Math.max(Math.round(distancia / velocidadKmMin), 2); // Mínimo 2 minutos
+          
+          console.log(`📍 Conductor ${conductorSeleccionado.nombre} está a ${distancia.toFixed(2)} km del origen`);
+          console.log(`⏱️ Tiempo estimado: ${tiempoEstimado} minutos`);
+        } catch (error) {
+          console.error('Error calculando tiempo real, usando tiempo simulado:', error);
+          tiempoEstimado = inmediato ? 
+            Math.floor(Math.random() * 300) + 300 : // 5-10 minutos para inmediato
+            Math.floor(Math.random() * 600) + 600;  // 10-20 minutos para no inmediato
+        }
+      } else {
+        // Tiempo simulado si no hay origen o posición
+        tiempoEstimado = inmediato ? 
+          Math.floor(Math.random() * 300) + 300 : // 5-10 minutos para inmediato
+          Math.floor(Math.random() * 600) + 600;  // 10-20 minutos para no inmediato
+      }
 
       return {
         duracion: tiempoEstimado,
@@ -223,5 +292,40 @@ export class ServiciosService {
       }
       throw new InternalServerErrorException('Error al calcular el tiempo estimado');
     }
+  }
+
+  /**
+   * Calcula la distancia desde las coordenadas del conductor hasta el origen del servicio
+   */
+  private async calcularDistanciaDesdeConductor(latConductor: number, lonConductor: number, direccionOrigen: string): Promise<number> {
+    try {
+      // Obtener coordenadas del origen usando geocodificación
+      const coordenadasOrigen = await this.obtenerCoordenadas(direccionOrigen);
+      
+      const latOrigen = parseFloat(coordenadasOrigen.lat);
+      const lonOrigen = parseFloat(coordenadasOrigen.lng);
+      
+      // Calcular distancia usando fórmula de Haversine
+      const R = 6371; // Radio de la Tierra en km
+      const dLat = this.toRadians(latOrigen - latConductor);
+      const dLon = this.toRadians(lonOrigen - lonConductor);
+      
+      const a = 
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(this.toRadians(latConductor)) * Math.cos(this.toRadians(latOrigen)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    } catch (error) {
+      console.error('Error calculando distancia desde conductor:', error);
+      return 5; // Distancia por defecto si falla el cálculo
+    }
+  }
+
+
+
+  private toRadians(grados: number): number {
+    return grados * (Math.PI / 180);
   }
 } 
