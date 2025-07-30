@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn } from 'typeorm';
 import { Conductor } from './conductor.entity';
 
 @Entity('conductor_posicion')
@@ -9,7 +9,7 @@ export class ConductorPosicion {
   @Column({ type: 'int' })
   conductorId: number;
 
-  @ManyToOne(() => Conductor, conductor => conductor.id)
+  @OneToOne(() => Conductor, conductor => conductor.posicion)
   @JoinColumn({ name: 'conductorId' })
   conductor: Conductor;
 

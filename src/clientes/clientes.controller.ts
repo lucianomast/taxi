@@ -3,6 +3,7 @@ import { ClientesService } from './clientes.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { CrearClienteDto } from './dto/crear-cliente.dto';
 import { ActualizarClienteDto } from './dto/actualizar-cliente.dto';
+import { GetLocationDto } from './dto/get-location.dto';
 
 @ApiTags('clientes')
 @Controller('clientes')
@@ -161,5 +162,37 @@ export class ClientesController {
   @ApiResponse({ status: 404, description: 'Cliente no encontrado' })
   async getUser(@Query('telefono') telefono: string) {
     return this.clientesService.getUser(telefono);
+  }
+
+  @Get('get_location')
+  @ApiOperation({ 
+    summary: 'Obtener coordenadas de una dirección',
+    description: 'Convierte una dirección en coordenadas de latitud y longitud'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Coordenadas obtenidas correctamente',
+    schema: {
+      example: {
+        address: 'Calle Mayor 123, Madrid, España',
+        lat: 40.4168,
+        lng: -3.7038,
+        formattedAddress: 'Calle Mayor, 123, 28013 Madrid, España',
+        country: 'España',
+        city: 'Madrid',
+        state: 'Madrid',
+        zipcode: '28013',
+        streetName: 'Calle Mayor',
+        streetNumber: '123'
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Error al obtener coordenadas' })
+  @ApiResponse({ status: 404, description: 'Dirección no encontrada' })
+  async getLocation(@Query('address') address: string) {
+    if (!address) {
+      throw new BadRequestException('El parámetro address es requerido');
+    }
+    return this.clientesService.getLocation(address);
   }
 } 

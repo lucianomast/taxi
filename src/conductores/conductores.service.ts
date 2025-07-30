@@ -11,6 +11,7 @@ import { ActivarCuentaDto } from './dto/activar-cuenta.dto';
 import { OlvidePasswordDto } from './dto/olvide-password.dto';
 import { CambiarPasswordCodigoDto } from './dto/cambiar-password-codigo.dto';
 import { GuardarCoordenadasDto } from './dto/guardar-coordenadas.dto';
+import { PenalizarConductorDto } from './dto/penalizar-conductor.dto';
 import { EmailService } from '../email/email.service';
 import * as bcrypt from 'bcrypt';
 
@@ -450,7 +451,82 @@ export class ConductoresService {
           modelo: posicion.conductor.modeloCoche,
           matricula: posicion.conductor.matricula
         }
-      }
+             }
+     };
+   }
+
+  async penalizarConductor(dto: PenalizarConductorDto): Promise<any> {
+    // Verificar que el conductor existe
+    const conductor = await this.conductoresRepository.findOne({ 
+      where: { id: dto.conductorId } 
+    });
+
+    if (!conductor) {
+      throw new NotFoundException('No se encontró un conductor con ese ID');
+    }
+
+    // Calcular duración de penalización según tipo
+    const duracionMinutos = dto.tipo === 'manual' ? 5 : 20;
+    const penalizacionHasta = new Date();
+    penalizacionHasta.setMinutes(penalizacionHasta.getMinutes() + duracionMinutos);
+
+    // Actualizar conductor con penalización
+    conductor.ultimaPenalizacion = penalizacionHasta;
+    conductor.updated_at = new Date();
+
+    await this.conductoresRepository.save(conductor);
+
+    return {
+      message: `Conductor penalizado por ${duracionMinutos} minutos`,
+      conductorId: conductor.id,
+      nombre: conductor.nombre,
+      apellidos: conductor.apellidos,
+      tipo: dto.tipo,
+      duracionMinutos,
+      penalizacionHasta,
+      motivo: dto.motivo || 'Sin motivo especificado'
     };
+  }
+
+  async verificarPenalizacion(conductorId: number): Promise<any> {
+    const conductor = await this.conductoresRepository.findOne({ 
+      where: { id: conductorId } 
+    });
+
+    if (!conductor) {
+      throw new NotFoundException('No se encontró un conductor con ese ID');
+    }
+
+    const ahora = new Date();
+    const penalizado = conductor.ultimaPenalizacion && conductor.ultimaPenalizacion > ahora;
+
+    return {
+      conductorId: conductor.id,
+      nombre: conductor.nombre,
+      apellidos: conductor.apellidos,
+      penalizado,
+      ultimaPenalizacion: conductor.ultimaPenalizacion,
+      tiempoRestante: penalizado && conductor.ultimaPenalizacion ? Math.ceil((conductor.ultimaPenalizacion.getTime() - ahora.getTime()) / 60000) : 0
+    };
+  }
+
+  async obtenerConductoresDisponibles(): Promise<Conductor[]> {
+    const ahora = new Date();
+    
+    return await this.conductoresRepository
+      .createQueryBuilder('conductor')
+      .where('conductor.activo = :activo', { activo: true })
+      .andWhere('conductor.estado = :estado', { estado: 10 }) // Disponible
+      .andWhere('(conductor.ultimaPenalizacion IS NULL OR conductor.ultimaPenalizacion < :ahora)', { ahora })
+      .orderBy('conductor.nombre', 'ASC')
+      .getMany();
+  }
+
+  async penalizarPorRechazo(conductorId: number, motivo?: string): Promise<any> {
+    return this.penalizarConductor({
+      conductorId,
+      tipo: 'automatica',
+      motivo: motivo || 'Rechazo de servicio'
+    });
   }
 } 

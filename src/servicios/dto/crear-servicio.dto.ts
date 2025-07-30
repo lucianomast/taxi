@@ -19,21 +19,25 @@ export class CrearServicioDto {
   @IsString()
   destino: string;
 
-  @ApiProperty({ example: '40.345247' })
+  @ApiProperty({ example: '40.345247', required: false, description: 'Latitud del origen (se obtiene automáticamente si no se proporciona)' })
+  @IsOptional()
   @IsString()
-  origenLat: string;
+  origenLat?: string;
 
-  @ApiProperty({ example: '-3.819113' })
+  @ApiProperty({ example: '-3.819113', required: false, description: 'Longitud del origen (se obtiene automáticamente si no se proporciona)' })
+  @IsOptional()
   @IsString()
-  origenLon: string;
+  origenLon?: string;
 
-  @ApiProperty({ example: '40.403342' })
+  @ApiProperty({ example: '40.403342', required: false, description: 'Latitud del destino (se obtiene automáticamente si no se proporciona)' })
+  @IsOptional()
   @IsString()
-  destinoLat: string;
+  destinoLat?: string;
 
-  @ApiProperty({ example: '-3.738408' })
+  @ApiProperty({ example: '-3.738408', required: false, description: 'Longitud del destino (se obtiene automáticamente si no se proporciona)' })
+  @IsOptional()
   @IsString()
-  destinoLon: string;
+  destinoLon?: string;
 
   @ApiProperty({ example: 40, description: 'Estado del servicio' })
   @IsInt()

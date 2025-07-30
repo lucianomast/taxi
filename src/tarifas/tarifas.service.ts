@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Tarifa } from './entities/tarifa.entity';
@@ -10,6 +10,8 @@ import { GeolocalizacionService } from './geolocalizacion.service';
 
 @Injectable()
 export class TarifasService {
+  private readonly logger = new Logger(TarifasService.name);
+
   constructor(
     @InjectRepository(Tarifa)
     private tarifasRepository: Repository<Tarifa>,
@@ -105,8 +107,9 @@ export class TarifasService {
       throw new NotFoundException(`Dirección de destino no válida: ${destino}`);
     }
 
-    // Calcular distancia
-    const resultadoDistancia = await this.geolocalizacionService.calcularDistancia(origen, destino);
+    // Calcular distancia usando coordenadas (método mejorado)
+    this.logger.log('🔄 Usando nuevo método de cálculo con coordenadas...');
+    const resultadoDistancia = await this.geolocalizacionService.calcularDistanciaConCoordenadas(origen, destino);
     
     // Obtener fecha y hora actual si no se proporcionan
     let fechaActual: Date;

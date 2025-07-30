@@ -185,4 +185,31 @@ export class ServiciosController {
   getById(@Query('id') id: number) {
     return this.serviciosService.getById(id);
   }
+
+  @Get('get_tiempo_estimado')
+  @ApiOperation({ 
+    summary: 'Obtener tiempo estimado de llegada del conductor más cercano',
+    description: 'Verifica la disponibilidad de conductores y calcula el tiempo estimado de llegada del conductor más cercano'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Tiempo estimado calculado correctamente',
+    schema: {
+      example: {
+        duracion: 300,
+        duracionText: "5 mins",
+        conductor: {
+          id: 2,
+          nombre: "Juan",
+          apellidos: "Pérez",
+          matricula: "ABC123"
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 404, description: 'No hay conductores disponibles' })
+  @ApiResponse({ status: 400, description: 'Error en el cálculo del tiempo estimado' })
+  async getTiempoEstimado(@Query('inmediato') inmediato: boolean = false) {
+    return this.serviciosService.getTiempoEstimado(inmediato);
+  }
 } 

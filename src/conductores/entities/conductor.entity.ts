@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToOne } from 'typeorm';
 import { Empresa } from '../../empresas/entities/empresa.entity';
+import { ConductorPosicion } from './conductor-posicion.entity';
 
 @Entity('conductores')
 export class Conductor {
@@ -96,4 +97,7 @@ export class Conductor {
 
   @Column({ type: 'date', nullable: true })
   deleted_at?: Date;
+
+  @OneToOne(() => ConductorPosicion, posicion => posicion.conductor)
+  posicion: ConductorPosicion;
 } 

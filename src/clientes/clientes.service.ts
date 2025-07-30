@@ -5,6 +5,8 @@ import { Cliente } from './entities/cliente.entity';
 import { Empresa } from '../empresas/entities/empresa.entity';
 import { CrearClienteDto } from './dto/crear-cliente.dto';
 import { ActualizarClienteDto } from './dto/actualizar-cliente.dto';
+import { GetLocationDto } from './dto/get-location.dto';
+import * as NodeGeocoder from 'node-geocoder';
 
 @Injectable()
 export class ClientesService {
@@ -48,5 +50,44 @@ export class ClientesService {
     const cliente = await this.clientesRepository.findOne({ where: { telefono } });
     if (!cliente) throw new NotFoundException('Cliente no encontrado');
     return cliente;
+  }
+
+  async getLocation(address: string): Promise<any> {
+    try {
+      // Configurar el geocoder con OpenStreetMap (gratuito)
+      const options: any = {
+        provider: 'openstreetmap',
+        formatter: null
+      };
+
+      const geocoder = NodeGeocoder(options);
+      
+      // Realizar la geocodificación
+      const results = await geocoder.geocode(address);
+      
+      if (!results || results.length === 0) {
+        throw new NotFoundException('No se encontraron coordenadas para esta dirección');
+      }
+
+      const result = results[0];
+      
+      return {
+        address: address,
+        lat: result.latitude,
+        lng: result.longitude,
+        formattedAddress: result.formattedAddress,
+        country: result.country,
+        city: result.city,
+        state: result.state,
+        zipcode: result.zipcode,
+        streetName: result.streetName,
+        streetNumber: result.streetNumber
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Error al obtener las coordenadas de la dirección');
+    }
   }
 } 

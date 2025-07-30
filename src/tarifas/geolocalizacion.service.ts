@@ -8,7 +8,7 @@ interface Coordenadas {
 interface DistanciaResultado {
   distancia_km: number;
   tiempo_minutos: number;
-  metodo: 'google' | 'haversine';
+  metodo: 'google' | 'haversine' | 'google_coordenadas' | 'haversine_coordenadas';
   origen: string;
   destino: string;
 }
@@ -22,30 +22,160 @@ export class GeolocalizacionService {
    * con fallback a fórmula de Haversine
    */
   async calcularDistancia(origen: string, destino: string): Promise<DistanciaResultado> {
+    this.logger.log(`🚀 Iniciando cálculo de distancia: ${origen} → ${destino}`);
+    
     try {
       // Intentar con Google Distance Matrix primero
+      this.logger.log('📍 Intentando cálculo con Google Distance Matrix...');
       const resultadoGoogle = await this.calcularDistanciaGoogle(origen, destino);
       if (resultadoGoogle) {
+        this.logger.log('✅ Cálculo exitoso con Google Distance Matrix');
         return {
           ...resultadoGoogle,
           metodo: 'google'
         };
       }
     } catch (error) {
-      this.logger.warn(`Error con Google Distance Matrix: ${error.message}`);
+      this.logger.warn(`⚠️ Error con Google Distance Matrix: ${error.message}`);
     }
 
     // Fallback a Haversine
     try {
+      this.logger.log('📍 Intentando cálculo con Haversine (OpenStreetMap)...');
       const resultadoHaversine = await this.calcularDistanciaHaversine(origen, destino);
+      this.logger.log('✅ Cálculo exitoso con Haversine');
       return {
         ...resultadoHaversine,
         metodo: 'haversine'
       };
     } catch (error) {
-      this.logger.error(`Error con cálculo Haversine: ${error.message}`);
+      this.logger.error(`❌ Error con cálculo Haversine: ${error.message}`);
       throw new Error('No se pudo calcular la distancia');
     }
+  }
+
+  /**
+   * NUEVO MÉTODO: Calcula distancia usando coordenadas obtenidas con nuestro sistema de geocodificación
+   */
+  async calcularDistanciaConCoordenadas(origen: string, destino: string): Promise<DistanciaResultado> {
+    this.logger.log(`🚀 Iniciando cálculo de distancia con coordenadas: ${origen} → ${destino}`);
+    
+    // 1. Obtener coordenadas usando nuestro sistema de geocodificación
+    this.logger.log('📍 Obteniendo coordenadas del origen...');
+    const coordenadasOrigen = await this.obtenerCoordenadasConNuestroSistema(origen);
+    this.logger.log(`✅ Coordenadas origen: ${coordenadasOrigen.lat}, ${coordenadasOrigen.lng}`);
+    
+    this.logger.log('📍 Obteniendo coordenadas del destino...');
+    const coordenadasDestino = await this.obtenerCoordenadasConNuestroSistema(destino);
+    this.logger.log(`✅ Coordenadas destino: ${coordenadasDestino.lat}, ${coordenadasDestino.lng}`);
+    
+    try {
+      // 2. Intentar calcular distancia con Google usando coordenadas
+      this.logger.log('📍 Intentando cálculo con Google usando coordenadas...');
+      const resultadoGoogle = await this.calcularDistanciaGoogleConCoordenadas(coordenadasOrigen, coordenadasDestino);
+      if (resultadoGoogle) {
+        this.logger.log('✅ Cálculo exitoso con Google usando coordenadas');
+        return {
+          ...resultadoGoogle,
+          metodo: 'google_coordenadas'
+        };
+      }
+    } catch (error) {
+      this.logger.warn(`⚠️ Error con Google usando coordenadas: ${error.message}`);
+    }
+
+    // 3. Fallback a Haversine con coordenadas ya obtenidas
+    try {
+      this.logger.log('📍 Calculando distancia con fórmula de Haversine...');
+      const distancia = this.calcularDistanciaHaversineEntreCoordenadas(coordenadasOrigen, coordenadasDestino);
+      const tiempoEstimado = distancia * 2; // 2 minutos por km
+      
+      this.logger.log(`✅ Cálculo exitoso con Haversine: ${distancia.toFixed(2)} km`);
+      
+      return {
+        distancia_km: distancia,
+        tiempo_minutos: tiempoEstimado,
+        metodo: 'haversine_coordenadas',
+        origen,
+        destino
+      };
+    } catch (error) {
+      this.logger.error(`❌ Error con cálculo Haversine: ${error.message}`);
+      throw new Error('No se pudo calcular la distancia');
+    }
+  }
+
+  /**
+   * Obtiene coordenadas usando nuestro sistema de geocodificación (node-geocoder)
+   */
+  private async obtenerCoordenadasConNuestroSistema(direccion: string): Promise<Coordenadas> {
+    try {
+      const NodeGeocoder = require('node-geocoder');
+      const options: any = {
+        provider: 'openstreetmap',
+        formatter: null
+      };
+
+      const geocoder = NodeGeocoder(options);
+      const results = await geocoder.geocode(direccion);
+      
+      if (!results || results.length === 0) {
+        throw new Error(`No se encontraron coordenadas para: ${direccion}`);
+      }
+
+      const result = results[0];
+      
+      if (!result.latitude || !result.longitude) {
+        throw new Error(`Coordenadas incompletas para: ${direccion}`);
+      }
+      
+      return {
+        lat: result.latitude,
+        lng: result.longitude
+      };
+    } catch (error) {
+      this.logger.error(`Error obteniendo coordenadas para ${direccion}: ${error.message}`);
+      throw new Error(`Error al obtener coordenadas para: ${direccion}`);
+    }
+  }
+
+  /**
+   * Calcula distancia usando Google Distance Matrix API con coordenadas
+   */
+  private async calcularDistanciaGoogleConCoordenadas(origen: Coordenadas, destino: Coordenadas): Promise<Omit<DistanciaResultado, 'metodo'> | null> {
+    const apiKey = process.env.GOOGLE_API_KEY;
+    if (!apiKey) {
+      this.logger.warn('GOOGLE_API_KEY no configurada');
+      return null;
+    }
+
+    const url = new URL('https://maps.googleapis.com/maps/api/distancematrix/json');
+    url.searchParams.append('origins', `${origen.lat},${origen.lng}`);
+    url.searchParams.append('destinations', `${destino.lat},${destino.lng}`);
+    url.searchParams.append('key', apiKey);
+    url.searchParams.append('units', 'metric');
+    url.searchParams.append('mode', 'driving');
+
+    const response = await fetch(url.toString());
+    const data = await response.json();
+
+    if (data.status !== 'OK') {
+      this.logger.warn(`Google API error: ${data.status}`);
+      return null;
+    }
+
+    const element = data.rows[0]?.elements[0];
+    if (!element || element.status !== 'OK') {
+      this.logger.warn(`Google API element error: ${element?.status}`);
+      return null;
+    }
+
+    return {
+      distancia_km: element.distance.value / 1000, // Convertir metros a kilómetros
+      tiempo_minutos: element.duration.value / 60, // Convertir segundos a minutos
+      origen: `${origen.lat},${origen.lng}`,
+      destino: `${destino.lat},${destino.lng}`
+    };
   }
 
   /**

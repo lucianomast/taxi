@@ -7,6 +7,7 @@ import { ActivarCuentaDto } from './dto/activar-cuenta.dto';
 import { OlvidePasswordDto } from './dto/olvide-password.dto';
 import { CambiarPasswordCodigoDto } from './dto/cambiar-password-codigo.dto';
 import { GuardarCoordenadasDto } from './dto/guardar-coordenadas.dto';
+import { PenalizarConductorDto } from './dto/penalizar-conductor.dto';
 import { Request } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 // import { AuthGuard } from '../auth/auth.guard'; // Descomenta si tienes un guard de autenticación
@@ -289,5 +290,111 @@ export class ConductoresController {
   @ApiResponse({ status: 404, description: 'Conductor no encontrado o sin posición' })
   obtenerPosicionConductor(@Param('conductorId') conductorId: number) {
     return this.conductoresService.obtenerPosicionConductor(conductorId);
+  }
+
+  @Post('penalizar')
+  @ApiOperation({ 
+    summary: 'Penalizar un conductor',
+    description: 'Penaliza un conductor manualmente (5 min) o automáticamente (20 min)'
+  })
+  @ApiBody({ type: PenalizarConductorDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Conductor penalizado correctamente',
+    schema: {
+      example: {
+        message: 'Conductor penalizado por 5 minutos',
+        conductorId: 1,
+        nombre: 'Juan',
+        apellidos: 'Pérez',
+        tipo: 'manual',
+        duracionMinutos: 5,
+        penalizacionHasta: '2024-01-15T12:05:00.000Z',
+        motivo: 'Rechazo de servicio'
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Datos inválidos' })
+  @ApiResponse({ status: 404, description: 'Conductor no encontrado' })
+  penalizarConductor(@Body() dto: PenalizarConductorDto) {
+    return this.conductoresService.penalizarConductor(dto);
+  }
+
+  @Get('verificar-penalizacion/:conductorId')
+  @ApiOperation({ 
+    summary: 'Verificar penalización de un conductor',
+    description: 'Verifica si un conductor está penalizado y el tiempo restante'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Estado de penalización del conductor',
+    schema: {
+      example: {
+        conductorId: 1,
+        nombre: 'Juan',
+        apellidos: 'Pérez',
+        penalizado: true,
+        ultimaPenalizacion: '2024-01-15T12:05:00.000Z',
+        tiempoRestante: 3
+      }
+    }
+  })
+  @ApiResponse({ status: 404, description: 'Conductor no encontrado' })
+  verificarPenalizacion(@Param('conductorId') conductorId: number) {
+    return this.conductoresService.verificarPenalizacion(conductorId);
+  }
+
+  @Get('disponibles')
+  @ApiOperation({ 
+    summary: 'Obtener conductores disponibles',
+    description: 'Obtiene la lista de conductores disponibles (no penalizados)'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de conductores disponibles',
+    schema: {
+      example: [
+        {
+          id: 1,
+          nombre: 'Juan',
+          apellidos: 'Pérez',
+          activo: true,
+          estado: 10,
+          ultimaPenalizacion: null
+        }
+      ]
+    }
+  })
+  obtenerConductoresDisponibles() {
+    return this.conductoresService.obtenerConductoresDisponibles();
+  }
+
+  @Post('penalizar-rechazo/:conductorId')
+  @ApiOperation({ 
+    summary: 'Penalizar conductor por rechazo de servicio',
+    description: 'Penaliza automáticamente un conductor por rechazar un servicio (20 min)'
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Conductor penalizado por rechazo',
+    schema: {
+      example: {
+        message: 'Conductor penalizado por 20 minutos',
+        conductorId: 1,
+        nombre: 'Juan',
+        apellidos: 'Pérez',
+        tipo: 'automatica',
+        duracionMinutos: 20,
+        penalizacionHasta: '2024-01-15T12:20:00.000Z',
+        motivo: 'Rechazo de servicio'
+      }
+    }
+  })
+  @ApiResponse({ status: 404, description: 'Conductor no encontrado' })
+  penalizarPorRechazo(
+    @Param('conductorId') conductorId: number,
+    @Body() body?: { motivo?: string }
+  ) {
+    return this.conductoresService.penalizarPorRechazo(conductorId, body?.motivo);
   }
 } 
