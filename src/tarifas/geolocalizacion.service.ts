@@ -176,7 +176,11 @@ export class GeolocalizacionService {
       const NodeGeocoder = require('node-geocoder');
       const options: any = {
         provider: 'openstreetmap',
-        formatter: null
+        formatter: null,
+        httpAdapter: 'https',
+        extra: {
+          'User-Agent': 'TaxiApp/1.0 (https://tu-app.com; contacto@tu-app.com)'
+        }
       };
 
       const geocoder = NodeGeocoder(options);
@@ -310,7 +314,11 @@ export class GeolocalizacionService {
     url.searchParams.append('format', 'json');
     url.searchParams.append('limit', '1');
 
-    const response = await fetch(url.toString());
+    const response = await fetch(url.toString(), {
+      headers: {
+        'User-Agent': 'TaxiApp/1.0 (https://tu-app.com; contacto@tu-app.com)'
+      }
+    });
     const data = await response.json();
 
     if (!data || data.length === 0) {
@@ -371,7 +379,11 @@ export class GeolocalizacionService {
     url.searchParams.append('limit', '1');
     url.searchParams.append('addressdetails', '1');
 
-    const response = await fetch(url.toString());
+    const response = await fetch(url.toString(), {
+      headers: {
+        'User-Agent': 'TaxiApp/1.0 (https://tu-app.com; contacto@tu-app.com)'
+      }
+    });
     const data = await response.json();
 
     if (!data || data.length === 0) {
