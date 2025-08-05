@@ -93,23 +93,39 @@ export class TarifasService {
 
   // Lógica de cálculo de precios con geolocalización
   async calcularPrecio(calcularPrecioDto: CalcularPrecioDto): Promise<any> {
-    const { origen, destino, fecha, hora, tipo_servicio = 'normal', zona } = calcularPrecioDto;
+    const { origen, destino, fecha, hora, tipo_servicio = 'normal', zona, origenLat, origenLon, destinoLat, destinoLon } = calcularPrecioDto;
 
-    // Validar direcciones
-    const origenValido = await this.geolocalizacionService.validarDireccion(origen);
-    const destinoValido = await this.geolocalizacionService.validarDireccion(destino);
+    // Declarar variable para el resultado de distancia
+    let resultadoDistancia;
 
-    if (!origenValido) {
-      throw new NotFoundException(`Dirección de origen no válida: ${origen}`);
+    // Si se proporcionan coordenadas del frontend, usarlas directamente
+    if (origenLat && origenLon && destinoLat && destinoLon) {
+      this.logger.log('🔄 Usando coordenadas proporcionadas por el frontend...');
+      resultadoDistancia = await this.geolocalizacionService.calcularDistanciaConCoordenadasFrontend(
+        origen, 
+        destino, 
+        origenLat, 
+        origenLon, 
+        destinoLat, 
+        destinoLon
+      );
+    } else {
+      // Validar direcciones si no se proporcionan coordenadas
+      const origenValido = await this.geolocalizacionService.validarDireccion(origen);
+      const destinoValido = await this.geolocalizacionService.validarDireccion(destino);
+
+      if (!origenValido) {
+        throw new NotFoundException(`Dirección de origen no válida: ${origen}`);
+      }
+
+      if (!destinoValido) {
+        throw new NotFoundException(`Dirección de destino no válida: ${destino}`);
+      }
+
+      // Calcular distancia usando coordenadas (método mejorado)
+      this.logger.log('🔄 Usando nuevo método de cálculo con coordenadas...');
+      resultadoDistancia = await this.geolocalizacionService.calcularDistanciaConCoordenadas(origen, destino);
     }
-
-    if (!destinoValido) {
-      throw new NotFoundException(`Dirección de destino no válida: ${destino}`);
-    }
-
-    // Calcular distancia usando coordenadas (método mejorado)
-    this.logger.log('🔄 Usando nuevo método de cálculo con coordenadas...');
-    const resultadoDistancia = await this.geolocalizacionService.calcularDistanciaConCoordenadas(origen, destino);
     
     // Obtener fecha y hora actual si no se proporcionan
     let fechaActual: Date;

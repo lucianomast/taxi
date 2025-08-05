@@ -15,7 +15,7 @@ export class ServiciosController {
   @Post('crear')
   @ApiOperation({ 
     summary: 'Crear un nuevo servicio',
-    description: 'Crea un servicio con geocodificación automática de direcciones y cálculo automático de precio. Solo necesitas enviar clienteId, origen, destino, estado, adminId. Los campos precio, coordenadas y conductorId se calculan/asignan automáticamente.'
+    description: 'Crea un servicio usando las coordenadas proporcionadas por el frontend. Las coordenadas de latitud y longitud tanto del origen como del destino son requeridas y deben ser proporcionadas por el frontend.'
   })
   @ApiBody({ 
     schema: {
@@ -24,6 +24,10 @@ export class ServiciosController {
         clienteId: { type: 'number', example: 58, description: 'ID del cliente' },
         origen: { type: 'string', example: 'Santa Teresa 2227, Morón', description: 'Dirección de origen' },
         destino: { type: 'string', example: 'rafael castillo', description: 'Dirección de destino' },
+        origenLat: { type: 'string', example: '40.345247', description: 'Latitud del origen (proporcionada por el frontend)' },
+        origenLon: { type: 'string', example: '-3.819113', description: 'Longitud del origen (proporcionada por el frontend)' },
+        destinoLat: { type: 'string', example: '40.403342', description: 'Latitud del destino (proporcionada por el frontend)' },
+        destinoLon: { type: 'string', example: '-3.738408', description: 'Longitud del destino (proporcionada por el frontend)' },
         estado: { type: 'number', example: 10, description: 'Estado del servicio' },
         adminId: { type: 'number', example: 1, description: 'ID del admin' },
         inmediato: { type: 'boolean', example: true, description: 'Asignar conductor automáticamente' },
@@ -31,25 +35,19 @@ export class ServiciosController {
         comentarioServicio: { type: 'string', example: '', description: 'Comentario del servicio' },
         formaPago: { type: 'string', example: 'Efectivo', description: 'Forma de pago' }
       },
-      required: ['clienteId', 'origen', 'destino', 'estado', 'adminId']
+      required: ['clienteId', 'origen', 'destino', 'origenLat', 'origenLon', 'destinoLat', 'destinoLon', 'estado', 'adminId']
     },
     examples: {
-      'Ejemplo mínimo': {
-        summary: 'Solo campos requeridos',
+      'Ejemplo con coordenadas': {
+        summary: 'Crear servicio con coordenadas del frontend',
         value: {
           clienteId: 58,
           origen: 'Santa Teresa 2227, Morón',
           destino: 'rafael castillo',
-          estado: 10,
-          adminId: 1
-        }
-      },
-      'Ejemplo completo': {
-        summary: 'Con campos opcionales',
-        value: {
-          clienteId: 58,
-          origen: 'Santa Teresa 2227, Morón',
-          destino: 'rafael castillo',
+          origenLat: '40.345247',
+          origenLon: '-3.819113',
+          destinoLat: '40.403342',
+          destinoLon: '-3.738408',
           estado: 10,
           adminId: 1,
           inmediato: true,

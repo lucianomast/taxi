@@ -106,6 +106,69 @@ export class GeolocalizacionService {
   }
 
   /**
+   * NUEVO MÉTODO: Calcula distancia usando coordenadas proporcionadas por el frontend
+   */
+  async calcularDistanciaConCoordenadasFrontend(
+    origen: string, 
+    destino: string, 
+    origenLat: string, 
+    origenLon: string, 
+    destinoLat: string, 
+    destinoLon: string
+  ): Promise<DistanciaResultado> {
+    this.logger.log(`🚀 Iniciando cálculo de distancia con coordenadas del frontend: ${origen} → ${destino}`);
+    
+    // Convertir coordenadas de string a number
+    const coordenadasOrigen: Coordenadas = {
+      lat: parseFloat(origenLat),
+      lng: parseFloat(origenLon)
+    };
+    
+    const coordenadasDestino: Coordenadas = {
+      lat: parseFloat(destinoLat),
+      lng: parseFloat(destinoLon)
+    };
+    
+    this.logger.log(`✅ Coordenadas origen del frontend: ${coordenadasOrigen.lat}, ${coordenadasOrigen.lng}`);
+    this.logger.log(`✅ Coordenadas destino del frontend: ${coordenadasDestino.lat}, ${coordenadasDestino.lng}`);
+    
+    try {
+      // 1. Intentar calcular distancia con Google usando coordenadas del frontend
+      this.logger.log('📍 Intentando cálculo con Google usando coordenadas del frontend...');
+      const resultadoGoogle = await this.calcularDistanciaGoogleConCoordenadas(coordenadasOrigen, coordenadasDestino);
+      if (resultadoGoogle) {
+        this.logger.log('✅ Cálculo exitoso con Google usando coordenadas del frontend');
+        return {
+          ...resultadoGoogle,
+          metodo: 'google_coordenadas'
+        };
+      }
+    } catch (error) {
+      this.logger.warn(`⚠️ Error con Google usando coordenadas del frontend: ${error.message}`);
+    }
+
+    // 2. Fallback a Haversine con coordenadas del frontend
+    try {
+      this.logger.log('📍 Calculando distancia con fórmula de Haversine usando coordenadas del frontend...');
+      const distancia = this.calcularDistanciaHaversineEntreCoordenadas(coordenadasOrigen, coordenadasDestino);
+      const tiempoEstimado = distancia * 2; // 2 minutos por km
+      
+      this.logger.log(`✅ Cálculo exitoso con Haversine: ${distancia.toFixed(2)} km`);
+      
+      return {
+        distancia_km: distancia,
+        tiempo_minutos: tiempoEstimado,
+        metodo: 'haversine_coordenadas',
+        origen,
+        destino
+      };
+    } catch (error) {
+      this.logger.error(`❌ Error con cálculo Haversine usando coordenadas del frontend: ${error.message}`);
+      throw new Error('No se pudo calcular la distancia con las coordenadas proporcionadas');
+    }
+  }
+
+  /**
    * Obtiene coordenadas usando nuestro sistema de geocodificación (node-geocoder)
    */
   private async obtenerCoordenadasConNuestroSistema(direccion: string): Promise<Coordenadas> {

@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsInt, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsBoolean, IsNumberString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CrearServicioDto {
@@ -15,49 +15,41 @@ export class CrearServicioDto {
   @IsInt()
   conductorId?: number;
 
-  @ApiProperty({ example: 'Santa Teresa 2227, Morón', description: 'Dirección de origen (se geocodifica automáticamente)' })
+  @ApiProperty({ example: 'Santa Teresa 2227, Morón', description: 'Dirección de origen' })
   @IsString()
   origen: string;
 
-  @ApiProperty({ example: 'rafael castillo', description: 'Dirección de destino (se geocodifica automáticamente)' })
+  @ApiProperty({ example: 'rafael castillo', description: 'Dirección de destino' })
   @IsString()
   destino: string;
 
   @ApiProperty({ 
     example: '40.345247', 
-    required: false, 
-    description: 'Latitud del origen (se obtiene automáticamente por geocodificación si no se proporciona)' 
+    description: 'Latitud del origen (proporcionada por el frontend)' 
   })
-  @IsOptional()
-  @IsString()
-  origenLat?: string;
+  @IsNumberString()
+  origenLat: string;
 
   @ApiProperty({ 
     example: '-3.819113', 
-    required: false, 
-    description: 'Longitud del origen (se obtiene automáticamente por geocodificación si no se proporciona)' 
+    description: 'Longitud del origen (proporcionada por el frontend)' 
   })
-  @IsOptional()
-  @IsString()
-  origenLon?: string;
+  @IsNumberString()
+  origenLon: string;
 
   @ApiProperty({ 
     example: '40.403342', 
-    required: false, 
-    description: 'Latitud del destino (se obtiene automáticamente por geocodificación si no se proporciona)' 
+    description: 'Latitud del destino (proporcionada por el frontend)' 
   })
-  @IsOptional()
-  @IsString()
-  destinoLat?: string;
+  @IsNumberString()
+  destinoLat: string;
 
   @ApiProperty({ 
     example: '-3.738408', 
-    required: false, 
-    description: 'Longitud del destino (se obtiene automáticamente por geocodificación si no se proporciona)' 
+    description: 'Longitud del destino (proporcionada por el frontend)' 
   })
-  @IsOptional()
-  @IsString()
-  destinoLon?: string;
+  @IsNumberString()
+  destinoLon: string;
 
   @ApiProperty({ example: 10, description: 'Estado del servicio' })
   @IsInt()

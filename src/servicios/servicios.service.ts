@@ -40,28 +40,25 @@ export class ServiciosService {
       }
     }
 
-    // Obtener coordenadas automáticamente si no se proporcionan
-    let coordenadasServicio;
-    try {
-      coordenadasServicio = await this.obtenerCoordenadasServicio(dto.origen, dto.destino);
-      console.log('Coordenadas obtenidas automáticamente:', coordenadasServicio);
-    } catch (error) {
-      console.error('Error obteniendo coordenadas automáticamente:', error);
-      // Si falla la geocodificación, usar coordenadas por defecto o las proporcionadas
-      coordenadasServicio = {
-        origenLat: dto.origenLat || '0',
-        origenLon: dto.origenLon || '0',
-        destinoLat: dto.destinoLat || '0',
-        destinoLon: dto.destinoLon || '0'
-      };
-    }
+    // Usar las coordenadas proporcionadas por el frontend
+    const coordenadasServicio = {
+      origenLat: dto.origenLat,
+      origenLon: dto.origenLon,
+      destinoLat: dto.destinoLat,
+      destinoLon: dto.destinoLon
+    };
+    console.log('Coordenadas proporcionadas por el frontend:', coordenadasServicio);
 
-    // Calcular precio automáticamente usando la API de tarifas
+    // Calcular precio automáticamente usando la API de tarifas con las coordenadas proporcionadas
     let precioCalculado: number;
     try {
       const resultadoPrecio = await this.tarifasService.calcularPrecio({
         origen: dto.origen,
         destino: dto.destino,
+        origenLat: dto.origenLat,
+        origenLon: dto.origenLon,
+        destinoLat: dto.destinoLat,
+        destinoLon: dto.destinoLon,
         fecha: new Date().toISOString().split('T')[0], // Fecha actual
         hora: new Date().toLocaleTimeString('es-ES', { 
           hour: '2-digit', 
