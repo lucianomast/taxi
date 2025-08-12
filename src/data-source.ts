@@ -1,5 +1,6 @@
 import { DataSource } from 'typeorm';
 import { Conductor } from './conductores/entities/conductor.entity';
+import { ConductorPosicion } from './conductores/entities/conductor-posicion.entity';
 import { Cliente } from './clientes/entities/cliente.entity';
 import { Empresa } from './empresas/entities/empresa.entity';
 import { Servicio } from './servicios/entities/servicio.entity';
@@ -17,7 +18,7 @@ export const AppDataSource = new DataSource({
   ssl: process.env.DB_SSL === 'true' ? true : false,
   synchronize: false,
   logging: false,
-  entities: [Conductor, Cliente, Empresa, Servicio, Factura, Tarifa, Festivo],
+  entities: [Conductor, ConductorPosicion, Cliente, Empresa, Servicio, Factura, Tarifa, Festivo],
   migrations: [__dirname + '/migrations/*.ts'],
   subscribers: [],
 }); 

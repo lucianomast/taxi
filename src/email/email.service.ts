@@ -140,4 +140,56 @@ export class EmailService {
       return false;
     }
   }
+
+  async enviarFacturasExcel(email: string, buffer: Buffer, filename: string, filtros: any): Promise<boolean> {
+    try {
+      this.logger.log(`📧 Enviando reporte de facturas a: ${email}`);
+      
+      const result = await this.resend.emails.send({
+        from: 'onboarding@resend.dev',
+        to: email,
+        subject: 'Reporte de Facturas - Taxi App',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">Reporte de Facturas</h2>
+            <p>Hola,</p>
+            <p>Se ha generado el reporte de facturas según los filtros solicitados:</p>
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
+              <p><strong>Filtros aplicados:</strong></p>
+              <ul>
+                ${filtros.fechaDesde ? `<li>Fecha desde: ${filtros.fechaDesde}</li>` : ''}
+                ${filtros.fechaHasta ? `<li>Fecha hasta: ${filtros.fechaHasta}</li>` : ''}
+                ${filtros.clienteid ? `<li>Cliente ID: ${filtros.clienteid}</li>` : ''}
+                ${filtros.conductorid ? `<li>Conductor ID: ${filtros.conductorid}</li>` : ''}
+                ${!filtros.fechaDesde && !filtros.fechaHasta && !filtros.clienteid && !filtros.conductorid ? '<li>Todas las facturas</li>' : ''}
+              </ul>
+            </div>
+            <p>El archivo Excel se encuentra adjunto a este email.</p>
+            <hr>
+            <p style="color: #666; font-size: 12px;">
+              Este es un reporte automático generado por Taxi App.
+            </p>
+          </div>
+        `,
+        attachments: [
+          {
+            filename: filename,
+            content: buffer,
+          },
+        ],
+      });
+      
+      this.logger.log(`✅ Reporte de facturas enviado a: ${email}`);
+      this.logger.log(`📋 ID del email: ${result.data?.id || 'N/A'}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`❌ Error enviando reporte de facturas a ${email}:`, error);
+      this.logger.error(`🔍 Detalles del error:`, {
+        message: error.message,
+        code: error.code,
+        statusCode: error.statusCode
+      });
+      return false;
+    }
+  }
 } 
