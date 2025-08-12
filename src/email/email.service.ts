@@ -192,4 +192,57 @@ export class EmailService {
       return false;
     }
   }
+
+  async enviarClientesExcel(email: string, buffer: Buffer, filename: string): Promise<boolean> {
+    try {
+      this.logger.log(`📧 Enviando lista de clientes a: ${email}`);
+      
+      const result = await this.resend.emails.send({
+        from: 'onboarding@resend.dev',
+        to: email,
+        subject: 'Lista de Clientes - Taxi App',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">Lista de Clientes Exportada</h2>
+            <p>Hola,</p>
+            <p>Se ha generado la lista completa de clientes registrados en el sistema.</p>
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
+              <p><strong>Información incluida en el archivo:</strong></p>
+              <ul>
+                <li>Datos personales (nombre, apellidos, teléfono, email)</li>
+                <li>Dirección habitual</li>
+                <li>Información adicional del cliente</li>
+                <li>Estado del usuario</li>
+                <li>Coordenadas de ubicación</li>
+                <li>Fechas de creación y actualización</li>
+              </ul>
+            </div>
+            <p>El archivo Excel se encuentra adjunto a este email.</p>
+            <hr>
+            <p style="color: #666; font-size: 12px;">
+              Este es un reporte automático generado por Taxi App.
+            </p>
+          </div>
+        `,
+        attachments: [
+          {
+            filename: filename,
+            content: buffer,
+          },
+        ],
+      });
+      
+      this.logger.log(`✅ Lista de clientes enviada a: ${email}`);
+      this.logger.log(`📋 ID del email: ${result.data?.id || 'N/A'}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`❌ Error enviando lista de clientes a ${email}:`, error);
+      this.logger.error(`🔍 Detalles del error:`, {
+        message: error.message,
+        code: error.code,
+        statusCode: error.statusCode
+      });
+      return false;
+    }
+  }
 } 

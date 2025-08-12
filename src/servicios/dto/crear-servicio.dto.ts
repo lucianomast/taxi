@@ -1,5 +1,6 @@
-import { IsString, IsOptional, IsInt, IsBoolean, IsNumberString } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsBoolean, IsNumberString, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { EstadoServicio, ESTADO_SERVICIO_VALORES } from '../enums/estado-servicio.enum';
 
 export class CrearServicioDto {
   @ApiProperty({ example: 58, description: 'ID del cliente' })
@@ -51,9 +52,16 @@ export class CrearServicioDto {
   @IsNumberString()
   destinoLon: string;
 
-  @ApiProperty({ example: 10, description: 'Estado del servicio' })
-  @IsInt()
-  estado: number;
+  @ApiProperty({ 
+    example: 10, 
+    description: `Estado del servicio. Valores válidos: ${ESTADO_SERVICIO_VALORES.map(e => `${e.valor}=${e.descripcion}`).join(', ')}`,
+    enum: EstadoServicio,
+    enumName: 'EstadoServicio'
+  })
+  @IsEnum(EstadoServicio, { 
+    message: `Estado debe ser uno de los siguientes valores: ${ESTADO_SERVICIO_VALORES.map(e => `${e.valor} (${e.descripcion})`).join(', ')}` 
+  })
+  estado: EstadoServicio;
 
   @ApiProperty({ example: 1, description: 'ID del admin' })
   @IsInt()

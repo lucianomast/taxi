@@ -4,6 +4,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { CrearClienteDto } from './dto/crear-cliente.dto';
 import { ActualizarClienteDto } from './dto/actualizar-cliente.dto';
 import { GetLocationDto } from './dto/get-location.dto';
+import { ExportarClientesDto } from './dto/exportar-clientes.dto';
 
 @ApiTags('clientes')
 @Controller('clientes')
@@ -194,5 +195,84 @@ export class ClientesController {
       throw new BadRequestException('El parámetro address es requerido');
     }
     return this.clientesService.getLocation(address);
+  }
+
+  @Post('exportar-clientes')
+  @ApiOperation({ 
+    summary: 'Exportar lista de clientes a Excel',
+    description: `
+    Genera un archivo Excel con la lista completa de clientes y lo envía por email.
+    
+    **Características:**
+    - Incluye todos los clientes registrados en el sistema
+    - Genera un archivo Excel con formato profesional
+    - Envía el archivo por email al destinatario especificado
+    - Útil para reportes, análisis y respaldos de datos
+    
+    **Contenido del Excel:**
+    - ID del cliente
+    - Nombre y apellidos
+    - Teléfono y prefijo
+    - Email
+    - Dirección habitual
+    - Información del cliente
+    - Estado del usuario
+    - Fecha de creación
+    - Coordenadas (lat/lon)
+    `
+  })
+  @ApiBody({ 
+    type: ExportarClientesDto,
+    examples: {
+      'Ejemplo básico': {
+        summary: 'Exportar a email específico',
+        value: {
+          email: 'admin@empresa.com'
+        }
+      },
+      'Ejemplo con email personal': {
+        summary: 'Exportar a email personal',
+        value: {
+          email: 'gerente@taxi.com'
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de clientes exportada y enviada correctamente',
+    schema: {
+      example: {
+        success: true,
+        message: 'Lista de clientes exportada y enviada exitosamente a admin@empresa.com',
+        totalClientes: 150,
+        archivoGenerado: 'clientes_2024-07-25.xlsx'
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Error en el email o en la generación del archivo',
+    schema: {
+      example: {
+        message: 'Error al generar o enviar el archivo Excel',
+        error: 'Bad Request',
+        statusCode: 400
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 500, 
+    description: 'Error interno del servidor',
+    schema: {
+      example: {
+        message: 'Error interno al exportar clientes',
+        error: 'Internal Server Error',
+        statusCode: 500
+      }
+    }
+  })
+  async exportarClientes(@Body() dto: ExportarClientesDto) {
+    return this.clientesService.exportarClientes(dto.email);
   }
 } 

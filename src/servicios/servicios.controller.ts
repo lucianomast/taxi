@@ -4,6 +4,7 @@ import { CrearServicioDto } from './dto/crear-servicio.dto';
 import { ActualizarServicioDto } from './dto/actualizar-servicio.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ESTADO_SERVICIO_VALORES } from './enums/estado-servicio.enum';
 
 @ApiTags('servicios')
 @Controller('servicios')
@@ -254,5 +255,522 @@ export class ServiciosController {
   @ApiResponse({ status: 400, description: 'Error en el cálculo del tiempo estimado' })
   async getTiempoEstimado(@Query('inmediato') inmediato: boolean = false) {
     return this.serviciosService.getTiempoEstimado(inmediato);
+  }
+
+  @Get('estados')
+  @ApiOperation({ 
+    summary: 'Obtener estados disponibles de servicios',
+    description: 'Retorna la lista de todos los estados posibles para un servicio con sus valores numéricos y descripciones.'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Estados disponibles',
+    schema: {
+      example: [
+        { valor: 7, descripcion: 'Reserva' },
+        { valor: 10, descripcion: 'Asignado' },
+        { valor: 15, descripcion: 'Confirmado' },
+        { valor: 20, descripcion: 'En ruta' },
+        { valor: 25, descripcion: 'En puerta' },
+        { valor: 30, descripcion: 'Con cliente' },
+        { valor: 40, descripcion: 'Finalizado' },
+        { valor: 90, descripcion: 'Cancelado' }
+      ]
+    }
+  })
+  getEstados() {
+    return ESTADO_SERVICIO_VALORES;
+  }
+
+  @Get('get_reservas')
+  @ApiOperation({ 
+    summary: 'Obtener servicios con estado Reserva',
+    description: `
+    Retorna todos los servicios que tienen estado 7 (Reserva). 
+    
+    **Características del endpoint:**
+    - Filtra automáticamente servicios con estado = 7 (Reserva)
+    - Incluye relaciones completas: cliente, conductor y admin
+    - Ordena por fecha de creación (más recientes primero)
+    - Útil para mostrar servicios pendientes de asignación
+    
+    **Estados de servicio:**
+    - 7: Reserva (servicios pendientes de asignar conductor)
+    - 10: Asignado
+    - 15: Confirmado
+    - 20: En ruta
+    - 25: En puerta
+    - 30: Con cliente
+    - 40: Finalizado
+    - 90: Cancelado
+    
+    **Uso típico:**
+    - Panel de administración para ver servicios pendientes
+    - Asignación manual de conductores
+    - Gestión de reservas
+    `
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de servicios en reserva obtenida correctamente',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'number', example: 1100, description: 'ID único del servicio' },
+          clienteId: { type: 'number', example: 58, description: 'ID del cliente' },
+          conductorId: { type: 'number', example: null, description: 'ID del conductor (null si no está asignado)' },
+          origen: { type: 'string', example: 'Santa Teresa 2227, Morón', description: 'Dirección de origen' },
+          destino: { type: 'string', example: 'rafael castillo', description: 'Dirección de destino' },
+          origenLat: { type: 'string', example: '40.345247', description: 'Latitud del origen' },
+          origenLon: { type: 'string', example: '-3.819113', description: 'Longitud del origen' },
+          destinoLat: { type: 'string', example: '40.403342', description: 'Latitud del destino' },
+          destinoLon: { type: 'string', example: '-3.738408', description: 'Longitud del destino' },
+          estado: { type: 'number', example: 7, description: 'Estado del servicio (7 = Reserva)' },
+          adminId: { type: 'number', example: 1, description: 'ID del administrador que creó el servicio' },
+          inmediato: { type: 'boolean', example: false, description: 'Si es servicio inmediato' },
+          observaciones: { type: 'string', example: 'Cliente VIP', description: 'Observaciones del servicio' },
+          comentarioServicio: { type: 'string', example: '', description: 'Comentario del servicio' },
+          formaPago: { type: 'string', example: 'Efectivo', description: 'Forma de pago' },
+          precio: { type: 'number', example: 22.43, description: 'Precio del servicio' },
+          created_at: { type: 'string', example: '2024-07-25T12:00:00.000Z', description: 'Fecha de creación' },
+          updated_at: { type: 'string', example: null, description: 'Fecha de última actualización' },
+          deleted_at: { type: 'string', example: null, description: 'Fecha de eliminación (soft delete)' },
+          cliente: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 58, description: 'ID del cliente' },
+              nombre: { type: 'string', example: 'Ana', description: 'Nombre del cliente' },
+              apellidos: { type: 'string', example: 'Pérez', description: 'Apellidos del cliente' },
+              email: { type: 'string', example: 'ana.perez@email.com', description: 'Email del cliente' }
+            }
+          },
+          conductor: {
+            type: 'object',
+            nullable: true,
+            description: 'Información del conductor (null si no está asignado)'
+          },
+          admin: {
+            type: 'object',
+            description: 'Información del administrador que creó el servicio'
+          }
+        }
+      },
+      example: [
+        {
+          id: 1100,
+          clienteId: 58,
+          conductorId: null,
+          origen: 'Santa Teresa 2227, Morón',
+          destino: 'rafael castillo',
+          origenLat: '40.345247',
+          origenLon: '-3.819113',
+          destinoLat: '40.403342',
+          destinoLon: '-3.738408',
+          estado: 7,
+          adminId: 1,
+          inmediato: false,
+          observaciones: 'Cliente VIP',
+          comentarioServicio: '',
+          formaPago: 'Efectivo',
+          precio: 22.43,
+          created_at: '2024-07-25T12:00:00.000Z',
+          updated_at: null,
+          deleted_at: null,
+          cliente: {
+            id: 58,
+            nombre: 'Ana',
+            apellidos: 'Pérez',
+            email: 'ana.perez@email.com'
+          },
+          conductor: null,
+          admin: {
+            id: 1,
+            nombre: 'Admin',
+            apellidos: 'Sistema'
+          }
+        },
+        {
+          id: 1101,
+          clienteId: 59,
+          conductorId: null,
+          origen: 'Av. Corrientes 1234, Buenos Aires',
+          destino: 'Plaza de Mayo, Buenos Aires',
+          origenLat: '-34.6037',
+          origenLon: '-58.3816',
+          destinoLat: '-34.6084',
+          destinoLon: '-58.3731',
+          estado: 7,
+          adminId: 1,
+          inmediato: true,
+          observaciones: 'Servicio urgente',
+          comentarioServicio: 'Cliente solicita prioridad',
+          formaPago: 'Tarjeta',
+          precio: 35.50,
+          created_at: '2024-07-25T13:30:00.000Z',
+          updated_at: null,
+          deleted_at: null,
+          cliente: {
+            id: 59,
+            nombre: 'Carlos',
+            apellidos: 'González',
+            email: 'carlos.gonzalez@email.com'
+          },
+          conductor: null,
+          admin: {
+            id: 1,
+            nombre: 'Admin',
+            apellidos: 'Sistema'
+          }
+        }
+      ]
+    }
+  })
+  @ApiResponse({ 
+    status: 401, 
+    description: 'No autorizado - Token JWT requerido',
+    schema: {
+      example: {
+        message: "Unauthorized",
+        statusCode: 401
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'No se encontraron servicios en reserva',
+    schema: {
+      example: {
+        message: 'No se encontraron servicios en estado de reserva',
+        error: 'Not Found',
+        statusCode: 404
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 500, 
+    description: 'Error interno del servidor',
+    schema: {
+      example: {
+        message: 'Error al obtener los servicios en reserva',
+        error: 'Internal Server Error',
+        statusCode: 500
+      }
+    }
+  })
+  getReservas() {
+    return this.serviciosService.getReservas();
+  }
+
+  @Get('get_asignados_pendientes')
+  @ApiOperation({ 
+    summary: 'Obtener servicios asignados pendientes de confirmación',
+    description: `
+    Retorna todos los servicios que están en estado 10 (Asignado) y pendientes de confirmación del conductor.
+    
+    **Características del endpoint:**
+    - Filtra servicios con estado = 10 (Asignado)
+    - Solo servicios que tienen conductor asignado
+    - Pendientes de confirmación del conductor
+    - No rechazados ni cancelados
+    - No finalizados
+    - Incluye relaciones completas: cliente, conductor y admin
+    - Ordena por fecha de creación (más recientes primero)
+    
+    **Estados de servicio:**
+    - 7: Reserva (servicios pendientes de asignar conductor)
+    - 10: Asignado (servicios asignados, pendientes de confirmación)
+    - 15: Confirmado
+    - 20: En ruta
+    - 25: En puerta
+    - 30: Con cliente
+    - 40: Finalizado
+    - 90: Cancelado
+    
+    **Uso típico:**
+    - Panel de administración para ver servicios asignados
+    - Seguimiento de confirmaciones pendientes
+    - Gestión de servicios en proceso de asignación
+    - Notificaciones a conductores para confirmar servicios
+    `
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de servicios asignados pendientes de confirmación',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'number', example: 1100, description: 'ID único del servicio' },
+          clienteId: { type: 'number', example: 58, description: 'ID del cliente' },
+          conductorId: { type: 'number', example: 3, description: 'ID del conductor asignado' },
+          origen: { type: 'string', example: 'Santa Teresa 2227, Morón', description: 'Dirección de origen' },
+          destino: { type: 'string', example: 'rafael castillo', description: 'Dirección de destino' },
+          origenLat: { type: 'string', example: '40.345247', description: 'Latitud del origen' },
+          origenLon: { type: 'string', example: '-3.819113', description: 'Longitud del origen' },
+          destinoLat: { type: 'string', example: '40.403342', description: 'Latitud del destino' },
+          destinoLon: { type: 'string', example: '-3.738408', description: 'Longitud del destino' },
+          estado: { type: 'number', example: 10, description: 'Estado del servicio (10 = Asignado)' },
+          adminId: { type: 'number', example: 1, description: 'ID del administrador que creó el servicio' },
+          inmediato: { type: 'boolean', example: false, description: 'Si es servicio inmediato' },
+          observaciones: { type: 'string', example: 'Cliente VIP', description: 'Observaciones del servicio' },
+          comentarioServicio: { type: 'string', example: '', description: 'Comentario del servicio' },
+          formaPago: { type: 'string', example: 'Efectivo', description: 'Forma de pago' },
+          precio: { type: 'number', example: 22.43, description: 'Precio del servicio' },
+          created_at: { type: 'string', example: '2024-07-25T12:00:00.000Z', description: 'Fecha de creación' },
+          updated_at: { type: 'string', example: null, description: 'Fecha de última actualización' },
+          deleted_at: { type: 'string', example: null, description: 'Fecha de eliminación (soft delete)' },
+          cliente: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 58, description: 'ID del cliente' },
+              nombre: { type: 'string', example: 'Ana', description: 'Nombre del cliente' },
+              apellidos: { type: 'string', example: 'Pérez', description: 'Apellidos del cliente' },
+              email: { type: 'string', example: 'ana.perez@email.com', description: 'Email del cliente' }
+            }
+          },
+          conductor: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 3, description: 'ID del conductor' },
+              nombre: { type: 'string', example: 'Juan', description: 'Nombre del conductor' },
+              apellidos: { type: 'string', example: 'García', description: 'Apellidos del conductor' },
+              matricula: { type: 'string', example: 'ABC123', description: 'Matrícula del vehículo' },
+              telefono: { type: 'string', example: '+34612345678', description: 'Teléfono del conductor' }
+            }
+          },
+          admin: {
+            type: 'object',
+            description: 'Información del administrador que creó el servicio'
+          }
+        }
+      },
+      example: [
+        {
+          id: 1100,
+          clienteId: 58,
+          conductorId: 3,
+          origen: 'Santa Teresa 2227, Morón',
+          destino: 'rafael castillo',
+          origenLat: '40.345247',
+          origenLon: '-3.819113',
+          destinoLat: '40.403342',
+          destinoLon: '-3.738408',
+          estado: 10,
+          adminId: 1,
+          inmediato: false,
+          observaciones: 'Cliente VIP',
+          comentarioServicio: '',
+          formaPago: 'Efectivo',
+          precio: 22.43,
+          created_at: '2024-07-25T12:00:00.000Z',
+          updated_at: null,
+          deleted_at: null,
+          cliente: {
+            id: 58,
+            nombre: 'Ana',
+            apellidos: 'Pérez',
+            email: 'ana.perez@email.com'
+          },
+          conductor: {
+            id: 3,
+            nombre: 'Juan',
+            apellidos: 'García',
+            matricula: 'ABC123',
+            telefono: '+34612345678'
+          },
+          admin: {
+            id: 1,
+            nombre: 'Admin',
+            apellidos: 'Sistema'
+          }
+        },
+        {
+          id: 1101,
+          clienteId: 59,
+          conductorId: 4,
+          origen: 'Av. Corrientes 1234, Buenos Aires',
+          destino: 'Plaza de Mayo, Buenos Aires',
+          origenLat: '-34.6037',
+          origenLon: '-58.3816',
+          destinoLat: '-34.6084',
+          destinoLon: '-58.3731',
+          estado: 10,
+          adminId: 1,
+          inmediato: true,
+          observaciones: 'Servicio urgente',
+          comentarioServicio: 'Cliente solicita prioridad',
+          formaPago: 'Tarjeta',
+          precio: 35.50,
+          created_at: '2024-07-25T13:30:00.000Z',
+          updated_at: null,
+          deleted_at: null,
+          cliente: {
+            id: 59,
+            nombre: 'Carlos',
+            apellidos: 'González',
+            email: 'carlos.gonzalez@email.com'
+          },
+          conductor: {
+            id: 4,
+            nombre: 'María',
+            apellidos: 'López',
+            matricula: 'XYZ789',
+            telefono: '+34687654321'
+          },
+          admin: {
+            id: 1,
+            nombre: 'Admin',
+            apellidos: 'Sistema'
+          }
+        }
+      ]
+    }
+  })
+  @ApiResponse({ 
+    status: 401, 
+    description: 'No autorizado - Token JWT requerido',
+    schema: {
+      example: {
+        message: "Unauthorized",
+        statusCode: 401
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'No se encontraron servicios asignados pendientes',
+    schema: {
+      example: {
+        message: 'No se encontraron servicios asignados pendientes de confirmación',
+        error: 'Not Found',
+        statusCode: 404
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 500, 
+    description: 'Error interno del servidor',
+    schema: {
+      example: {
+        message: 'Error al obtener los servicios asignados pendientes',
+        error: 'Internal Server Error',
+        statusCode: 500
+      }
+    }
+  })
+  getAsignadosPendientes() {
+    return this.serviciosService.getAsignadosPendientes();
+  }
+
+  @Post('calcular-precio')
+  @ApiOperation({ 
+    summary: 'Calcular precio de un servicio',
+    description: `
+    Calcula el precio de un servicio usando las coordenadas proporcionadas sin crear el servicio.
+    
+    **Características:**
+    - Usa las coordenadas de origen y destino proporcionadas
+    - Calcula precio basado en distancia y tarifas vigentes
+    - No crea el servicio, solo devuelve el precio calculado
+    - Útil para mostrar precio antes de confirmar el servicio
+    
+    **Parámetros requeridos:**
+    - origen: Dirección de origen
+    - destino: Dirección de destino  
+    - origenLat, origenLon: Coordenadas del origen
+    - destinoLat, destinoLon: Coordenadas del destino
+    `
+  })
+  @ApiBody({ 
+    schema: {
+      type: 'object',
+      properties: {
+        origen: { type: 'string', example: 'Santa Teresa 2227, Morón', description: 'Dirección de origen' },
+        destino: { type: 'string', example: 'rafael castillo', description: 'Dirección de destino' },
+        origenLat: { type: 'string', example: '40.345247', description: 'Latitud del origen' },
+        origenLon: { type: 'string', example: '-3.819113', description: 'Longitud del origen' },
+        destinoLat: { type: 'string', example: '40.403342', description: 'Latitud del destino' },
+        destinoLon: { type: 'string', example: '-3.738408', description: 'Longitud del destino' },
+        fecha: { type: 'string', example: '2024-07-25', description: 'Fecha del servicio (opcional, usa fecha actual si no se proporciona)' },
+        hora: { type: 'string', example: '14:30', description: 'Hora del servicio (opcional, usa hora actual si no se proporciona)' },
+        tipo_servicio: { type: 'string', example: 'normal', description: 'Tipo de servicio (normal, vip, etc.)' },
+        zona: { type: 'string', example: 'general', description: 'Zona de tarifa' }
+      },
+      required: ['origen', 'destino', 'origenLat', 'origenLon', 'destinoLat', 'destinoLon']
+    },
+    examples: {
+      'Ejemplo básico': {
+        summary: 'Cálculo básico de precio',
+        value: {
+          origen: 'Santa Teresa 2227, Morón',
+          destino: 'rafael castillo',
+          origenLat: '40.345247',
+          origenLon: '-3.819113',
+          destinoLat: '40.403342',
+          destinoLon: '-3.738408'
+        }
+      },
+      'Ejemplo completo': {
+        summary: 'Cálculo con todos los parámetros',
+        value: {
+          origen: 'Av. Corrientes 1234, Buenos Aires',
+          destino: 'Plaza de Mayo, Buenos Aires',
+          origenLat: '-34.6037',
+          origenLon: '-58.3816',
+          destinoLat: '-34.6084',
+          destinoLon: '-58.3731',
+          fecha: '2024-07-25',
+          hora: '14:30',
+          tipo_servicio: 'normal',
+          zona: 'general'
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Precio calculado correctamente',
+    schema: {
+      example: {
+        precio: 22.43,
+        distancia: 5.2,
+        tiempoEstimado: 15,
+        origen: 'Santa Teresa 2227, Morón',
+        destino: 'rafael castillo',
+        detalles: {
+          tarifaBase: 10.00,
+          tarifaPorKm: 2.50,
+          recargos: 0.00
+        }
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Error en los parámetros o cálculo del precio',
+    schema: {
+      example: {
+        message: 'Error al calcular el precio del servicio',
+        error: 'Bad Request',
+        statusCode: 400
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 500, 
+    description: 'Error interno del servidor',
+    schema: {
+      example: {
+        message: 'Error interno al calcular el precio',
+        error: 'Internal Server Error',
+        statusCode: 500
+      }
+    }
+  })
+  calcularPrecio(@Body() dto: any) {
+    return this.serviciosService.calcularPrecioServicio(dto);
   }
 } 

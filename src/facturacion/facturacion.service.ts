@@ -7,6 +7,7 @@ import { ActualizarFacturaDto } from './dto/actualizar-factura.dto';
 import { FiltrarFacturaDto } from './dto/filtrar-factura.dto';
 import { Servicio } from '../servicios/entities/servicio.entity';
 import { EmailService } from '../email/email.service';
+import { ESTADO_SERVICIO_DESCRIPCION } from '../servicios/enums/estado-servicio.enum';
 import * as XLSX from 'xlsx';
 
 @Injectable()
@@ -112,7 +113,8 @@ export class FacturacionService {
         'Origen': factura.servicio?.origen || 'N/A',
         'Destino': factura.servicio?.destino || 'N/A',
         'Conductor': factura.servicio?.conductor?.nombre || 'N/A',
-        'Estado Servicio': factura.servicio?.estado || 'N/A',
+        'Estado Servicio': factura.servicio?.estado ? 
+          `${factura.servicio.estado} (${ESTADO_SERVICIO_DESCRIPCION[factura.servicio.estado] || 'Desconocido'})` : 'N/A',
         'Fecha Creación': factura.created_at,
         'Fecha Actualización': factura.updated_at || 'N/A'
       }));

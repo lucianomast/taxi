@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Cliente } from '../../clientes/entities/cliente.entity';
 import { Conductor } from '../../conductores/entities/conductor.entity';
+import { EstadoServicio } from '../enums/estado-servicio.enum';
 
 @Entity('servicios')
 export class Servicio {
@@ -39,8 +40,11 @@ export class Servicio {
   @Column({ length: 20 })
   destinoLon: string;
 
-  @Column({ type: 'int' })
-  estado: number;
+  @Column({ 
+    type: 'int',
+    comment: 'Estado del servicio: 7=Reserva, 10=Asignado, 15=Confirmado, 20=En ruta, 25=En puerta, 30=Con cliente, 40=Finalizado, 90=Cancelado'
+  })
+  estado: EstadoServicio;
 
   @Column({ type: 'int' })
   adminId: number;

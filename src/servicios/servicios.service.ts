@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, QueryFailedError } from 'typeorm';
+import { Repository, QueryFailedError, Not } from 'typeorm';
 import { Servicio } from './entities/servicio.entity';
 import { CrearServicioDto } from './dto/crear-servicio.dto';
 import { ActualizarServicioDto } from './dto/actualizar-servicio.dto';
@@ -9,6 +9,7 @@ import { Conductor } from '../conductores/entities/conductor.entity';
 import { ConductorPosicion } from '../conductores/entities/conductor-posicion.entity';
 import { TarifasService } from '../tarifas/tarifas.service';
 import { NotificacionesService } from '../notificaciones/notificaciones.service';
+import { EstadoServicio } from './enums/estado-servicio.enum';
 import * as NodeGeocoder from 'node-geocoder';
 
 @Injectable()
@@ -138,10 +139,50 @@ export class ServiciosService {
   }
 
   async actualizar(id: number, dto: ActualizarServicioDto): Promise<Servicio> {
-    const servicio = await this.serviciosRepository.findOne({ where: { id } });
-    if (!servicio) throw new NotFoundException('Servicio no encontrado');
-    Object.assign(servicio, dto, { updated_at: new Date() });
-    return this.serviciosRepository.save(servicio);
+    try {
+      const servicio = await this.serviciosRepository.findOne({ where: { id } });
+      if (!servicio) {
+        throw new NotFoundException('Servicio no encontrado');
+      }
+
+      // Validar que el cliente existe si se está actualizando
+      if (dto.clienteId) {
+        const cliente = await this.clientesRepository.findOne({ where: { id: dto.clienteId } });
+        if (!cliente) {
+          throw new NotFoundException(`No se ha encontrado un cliente con el id ${dto.clienteId}`);
+        }
+      }
+
+      // Validar que el conductor existe si se está actualizando
+      if (dto.conductorId) {
+        const conductor = await this.conductoresRepository.findOne({ where: { id: dto.conductorId } });
+        if (!conductor) {
+          throw new NotFoundException(`No se ha encontrado un conductor con el id ${dto.conductorId}`);
+        }
+      }
+
+      // Validar que el admin existe si se está actualizando
+      if (dto.adminId) {
+        const admin = await this.conductoresRepository.findOne({ where: { id: dto.adminId } });
+        if (!admin) {
+          throw new NotFoundException(`No se ha encontrado un admin con el id ${dto.adminId}`);
+        }
+      }
+
+      // Actualizar el servicio
+      Object.assign(servicio, dto, { updated_at: new Date() });
+      return await this.serviciosRepository.save(servicio);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      if (error instanceof QueryFailedError) {
+        this.logger.error('Error de base de datos al actualizar servicio:', error);
+        throw new InternalServerErrorException('Error al actualizar el servicio en la base de datos');
+      }
+      this.logger.error('Error inesperado al actualizar servicio:', error);
+      throw new InternalServerErrorException('Error inesperado al actualizar el servicio');
+    }
   }
 
   async getLista(): Promise<Servicio[]> {
@@ -352,5 +393,133 @@ export class ServiciosService {
 
   private toRadians(grados: number): number {
     return grados * (Math.PI / 180);
+  }
+
+  async getReservas(): Promise<Servicio[]> {
+    try {
+      const reservas = await this.serviciosRepository.find({
+        where: { estado: EstadoServicio.RESERVA },
+        relations: ['cliente', 'conductor', 'admin'],
+        order: { created_at: 'DESC' }
+      });
+
+      if (reservas.length === 0) {
+        throw new NotFoundException('No se encontraron servicios en estado de reserva');
+      }
+
+      return reservas;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error('Error obteniendo servicios en reserva:', error);
+      throw new InternalServerErrorException('Error al obtener los servicios en reserva');
+    }
+  }
+
+  async getAsignadosPendientes(): Promise<Servicio[]> {
+    try {
+      const asignadosPendientes = await this.serviciosRepository.find({
+        where: { 
+          estado: EstadoServicio.ASIGNADO
+        },
+        relations: ['cliente', 'conductor', 'admin'],
+        order: { created_at: 'DESC' }
+      });
+
+      // Filtrar solo los que tienen conductor asignado (conductorId no es null)
+      const serviciosConConductor = asignadosPendientes.filter(servicio => servicio.conductorId !== null);
+
+      if (serviciosConConductor.length === 0) {
+        throw new NotFoundException('No se encontraron servicios asignados pendientes de confirmación');
+      }
+
+      return serviciosConConductor;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error('Error obteniendo servicios asignados pendientes:', error);
+      throw new InternalServerErrorException('Error al obtener los servicios asignados pendientes');
+    }
+  }
+
+  async calcularPrecioServicio(dto: any): Promise<any> {
+    try {
+      // Validar parámetros requeridos
+      if (!dto.origen || !dto.destino || !dto.origenLat || !dto.origenLon || !dto.destinoLat || !dto.destinoLon) {
+        throw new InternalServerErrorException('Faltan parámetros requeridos: origen, destino y coordenadas');
+      }
+
+      // Usar fecha y hora actuales si no se proporcionan
+      const fecha = dto.fecha || new Date().toISOString().split('T')[0];
+      const hora = dto.hora || new Date().toLocaleTimeString('es-ES', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      });
+
+      // Calcular precio usando el servicio de tarifas existente
+      const resultadoPrecio = await this.tarifasService.calcularPrecio({
+        origen: dto.origen,
+        destino: dto.destino,
+        origenLat: dto.origenLat,
+        origenLon: dto.origenLon,
+        destinoLat: dto.destinoLat,
+        destinoLon: dto.destinoLon,
+        fecha: fecha,
+        hora: hora,
+        tipo_servicio: dto.tipo_servicio || 'normal',
+        zona: dto.zona || 'general'
+      });
+
+      // Calcular distancia aproximada para información adicional
+      const distancia = await this.calcularDistanciaEntrePuntos(
+        parseFloat(dto.origenLat),
+        parseFloat(dto.origenLon),
+        parseFloat(dto.destinoLat),
+        parseFloat(dto.destinoLon)
+      );
+
+      // Calcular tiempo estimado aproximado
+      const tiempoEstimado = Math.max(Math.round(distancia * 2), 5); // 2 min por km, mínimo 5 min
+
+      return {
+        precio: resultadoPrecio.precio,
+        distancia: Math.round(distancia * 100) / 100, // Redondear a 2 decimales
+        tiempoEstimado: tiempoEstimado,
+        origen: dto.origen,
+        destino: dto.destino,
+        detalles: {
+          tarifaBase: resultadoPrecio.tarifaBase || 0,
+          tarifaPorKm: resultadoPrecio.tarifaPorKm || 0,
+          recargos: resultadoPrecio.recargos || 0
+        }
+      };
+
+    } catch (error) {
+      this.logger.error('Error calculando precio del servicio:', error);
+      if (error instanceof InternalServerErrorException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Error al calcular el precio del servicio');
+    }
+  }
+
+  /**
+   * Calcula la distancia entre dos puntos usando la fórmula de Haversine
+   */
+  private async calcularDistanciaEntrePuntos(lat1: number, lon1: number, lat2: number, lon2: number): Promise<number> {
+    const R = 6371; // Radio de la Tierra en km
+    const dLat = this.toRadians(lat2 - lat1);
+    const dLon = this.toRadians(lon2 - lon1);
+    
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.toRadians(lat1)) * Math.cos(this.toRadians(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
   }
 } 
