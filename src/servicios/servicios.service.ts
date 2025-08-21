@@ -358,7 +358,14 @@ export class ServiciosService {
           id: conductorSeleccionado.id,
           nombre: conductorSeleccionado.nombre,
           apellidos: conductorSeleccionado.apellidos,
-          matricula: conductorSeleccionado.matricula
+          matricula: conductorSeleccionado.matricula,
+          telefono: conductorSeleccionado.telefono,
+          email: conductorSeleccionado.email,
+          estado: conductorSeleccionado.estado,
+          posicion: {
+            lat: conductorSeleccionado.posicion?.lat || null,
+            lon: conductorSeleccionado.posicion?.lon || null
+          }
         }
       };
 

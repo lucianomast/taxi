@@ -306,16 +306,23 @@ export class ServiciosController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Tiempo estimado calculado correctamente',
+    description: 'Tiempo estimado calculado correctamente con datos del conductor',
     schema: {
       example: {
         duracion: 300,
         duracionText: "5 mins",
         conductor: {
-          id: 2,
-          nombre: "Juan",
-          apellidos: "Pérez",
-          matricula: "ABC123"
+          id: 123,
+          nombre: "Juan Pérez",
+          apellidos: "García",
+          matricula: "1234ABC",
+          telefono: "123456789",
+          email: "juan@email.com",
+          estado: 10,
+          posicion: {
+            lat: "40.4168",
+            lon: "-3.7038"
+          }
         }
       }
     }
