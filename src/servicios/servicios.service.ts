@@ -539,4 +539,121 @@ export class ServiciosService {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
+
+  /**
+   * Procesa servicios huérfanos (sin conductor asignado por más de 45 minutos)
+   * y los asigna al conductor más cercano automáticamente
+   */
+  async procesarServiciosHuerfanos(): Promise<any> {
+    try {
+      this.logger.log('🔍 Iniciando procesamiento de servicios huérfanos...');
+      
+      // Calcular la fecha límite (45 minutos atrás)
+      const fechaLimite = new Date(Date.now() - 45 * 60 * 1000);
+      
+      // Buscar servicios huérfanos
+      const serviciosHuerfanos = await this.serviciosRepository
+        .createQueryBuilder('servicio')
+        .leftJoinAndSelect('servicio.cliente', 'cliente')
+        .where('servicio.estado = :estado', { estado: EstadoServicio.RESERVA })
+        .andWhere('servicio.conductorId IS NULL')
+        .andWhere('servicio.created_at < :fechaLimite', { fechaLimite })
+        .orderBy('servicio.created_at', 'ASC')
+        .getMany();
+
+      if (serviciosHuerfanos.length === 0) {
+        this.logger.log('✅ No se encontraron servicios huérfanos para procesar');
+        return {
+          success: true,
+          message: 'No se encontraron servicios huérfanos para procesar',
+          serviciosProcesados: 0,
+          serviciosAsignados: 0,
+          serviciosFallidos: 0
+        };
+      }
+
+      this.logger.log(`📋 Encontrados ${serviciosHuerfanos.length} servicios huérfanos`);
+
+      let serviciosAsignados = 0;
+      let serviciosFallidos = 0;
+      const resultados = [];
+
+      // Procesar cada servicio huérfano
+      for (const servicio of serviciosHuerfanos) {
+        try {
+          this.logger.log(`🔄 Procesando servicio ${servicio.id} (${servicio.origen} → ${servicio.destino})`);
+          
+          // Buscar conductor más cercano
+          const resultadoTiempo = await this.getTiempoEstimado(false, servicio.origen);
+          
+          if (resultadoTiempo && resultadoTiempo.conductor) {
+            // Asignar conductor al servicio
+            await this.actualizar(servicio.id, {
+              conductorId: resultadoTiempo.conductor.id,
+              estado: EstadoServicio.ASIGNADO // Cambiar estado a Asignado
+            });
+
+            // Enviar notificación al conductor
+            try {
+              await this.notificacionesService.enviarNotificacionServicioAsignado(
+                resultadoTiempo.conductor.id,
+                servicio.id,
+                {
+                  origen: servicio.origen,
+                  destino: servicio.destino,
+                  precio: servicio.precio,
+                  fecha: servicio.created_at
+                }
+              );
+            } catch (error) {
+              this.logger.error(`❌ Error enviando notificación al conductor ${resultadoTiempo.conductor.id}:`, error);
+            }
+
+            serviciosAsignados++;
+            resultados.push({
+              servicioId: servicio.id,
+              conductorId: resultadoTiempo.conductor.id,
+              conductorNombre: `${resultadoTiempo.conductor.nombre} ${resultadoTiempo.conductor.apellidos}`,
+              tiempoEstimado: resultadoTiempo.duracionText,
+              estado: 'asignado'
+            });
+
+            this.logger.log(`✅ Servicio ${servicio.id} asignado al conductor ${resultadoTiempo.conductor.nombre} ${resultadoTiempo.conductor.apellidos}`);
+          } else {
+            serviciosFallidos++;
+            resultados.push({
+              servicioId: servicio.id,
+              estado: 'fallido',
+              motivo: 'No se encontró conductor disponible'
+            });
+            this.logger.warn(`⚠️ No se pudo asignar conductor al servicio ${servicio.id}`);
+          }
+        } catch (error) {
+          serviciosFallidos++;
+          resultados.push({
+            servicioId: servicio.id,
+            estado: 'fallido',
+            motivo: error.message
+          });
+          this.logger.error(`❌ Error procesando servicio ${servicio.id}:`, error);
+        }
+      }
+
+      this.logger.log(`✅ Procesamiento completado: ${serviciosAsignados} asignados, ${serviciosFallidos} fallidos`);
+
+      return {
+        success: true,
+        message: `Procesamiento de servicios huérfanos completado`,
+        serviciosProcesados: serviciosHuerfanos.length,
+        serviciosAsignados: serviciosAsignados,
+        serviciosFallidos: serviciosFallidos,
+        resultados: resultados,
+        fechaProcesamiento: new Date().toISOString()
+      };
+
+    } catch (error) {
+      this.logger.error('❌ Error en procesamiento de servicios huérfanos:', error);
+      throw new InternalServerErrorException('Error al procesar servicios huérfanos');
+    }
+  }
 } 

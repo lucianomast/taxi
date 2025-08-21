@@ -849,4 +849,85 @@ export class ServiciosController {
   calcularPrecio(@Body() dto: any) {
     return this.serviciosService.calcularPrecioServicio(dto);
   }
+
+  @Post('servicios-huerfanos')
+  @ApiOperation({ 
+    summary: 'Procesar servicios huérfanos automáticamente',
+    description: `
+    Procesa servicios huérfanos (sin conductor asignado por más de 45 minutos) y los asigna al conductor más cercano automáticamente.
+    
+    **Características del endpoint:**
+    - Busca servicios en estado Reserva (7) sin conductor asignado
+    - Filtra servicios creados hace más de 45 minutos
+    - Asigna automáticamente al conductor más cercano
+    - Cambia el estado del servicio a Asignado (10)
+    - Envía notificación push al conductor asignado
+    - Procesa los servicios más antiguos primero
+    
+    **Uso típico:**
+    - Ejecución automática cada 45 minutos (cron job)
+    - Gestión automática de servicios abandonados
+    - Mejora de la experiencia del cliente
+    - Optimización de asignación de conductores
+    `
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Procesamiento de servicios huérfanos completado',
+    schema: {
+      example: {
+        success: true,
+        message: "Procesamiento de servicios huérfanos completado",
+        serviciosProcesados: 3,
+        serviciosAsignados: 2,
+        serviciosFallidos: 1,
+        resultados: [
+          {
+            servicioId: 1100,
+            conductorId: 2,
+            conductorNombre: "Juan Pérez",
+            tiempoEstimado: "5 mins",
+            estado: "asignado"
+          },
+          {
+            servicioId: 1101,
+            conductorId: 3,
+            conductorNombre: "María García",
+            tiempoEstimado: "8 mins",
+            estado: "asignado"
+          },
+          {
+            servicioId: 1102,
+            estado: "fallido",
+            motivo: "No se encontró conductor disponible"
+          }
+        ],
+        fechaProcesamiento: "2024-07-25T14:30:00.000Z"
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 401, 
+    description: 'No autorizado - Token JWT requerido',
+    schema: {
+      example: {
+        message: "Unauthorized",
+        statusCode: 401
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 500, 
+    description: 'Error interno del servidor',
+    schema: {
+      example: {
+        message: 'Error al procesar servicios huérfanos',
+        error: 'Internal Server Error',
+        statusCode: 500
+      }
+    }
+  })
+  procesarServiciosHuerfanos() {
+    return this.serviciosService.procesarServiciosHuerfanos();
+  }
 } 
