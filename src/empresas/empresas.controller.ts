@@ -1,11 +1,14 @@
-import { Controller, Post, Body, Put, Param, Get, Query } from '@nestjs/common';
+import { Controller, Post, Body, Put, Param, Get, Query, UseGuards } from '@nestjs/common';
 import { EmpresasService } from './empresas.service';
 import { CrearEmpresaDto } from './dto/crear-empresa.dto';
 import { ActualizarEmpresaDto } from './dto/actualizar-empresa.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('empresas')
 @Controller('empresas')
+@UseGuards(JwtAuthGuard) // Proteger todo el controlador
+@ApiBearerAuth('JWT-auth') // Agregar autenticación Bearer en Swagger
 export class EmpresasController {
   constructor(private readonly empresasService: EmpresasService) {}
 

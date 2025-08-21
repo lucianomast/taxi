@@ -127,10 +127,13 @@ export class ServiciosController {
   }
 
   @Get('get_lista')
-  @ApiOperation({ summary: 'Obtener la lista de todos los servicios' })
+  @ApiOperation({ 
+    summary: 'Obtener la lista de todos los servicios',
+    description: 'Retorna todos los servicios con información del cliente asociado.'
+  })
   @ApiResponse({
     status: 200,
-    description: 'Lista de servicios',
+    description: 'Lista de servicios con información del cliente',
     schema: {
       example: [
         {
@@ -152,7 +155,19 @@ export class ServiciosController {
           precio: 22.43,
           created_at: '2024-07-25T12:00:00.000Z',
           updated_at: null,
-          deleted_at: null
+          deleted_at: null,
+          cliente: {
+            id: 58,
+            nombre: 'Ana',
+            apellidos: 'Pérez Mora',
+            telefono: '600000001',
+            prefijo: '+34',
+            email: 'ana@correo.com',
+            direccionHabitual: 'C. Inventada, 123, 28000 Madrid, España',
+            created_at: '2024-01-15T08:30:00.000Z',
+            updated_at: null,
+            deleted_at: null
+          }
         }
       ]
     }
@@ -162,10 +177,13 @@ export class ServiciosController {
   }
 
   @Get('get_lista_conductor')
-  @ApiOperation({ summary: 'Obtener la lista de servicios de un conductor' })
+  @ApiOperation({ 
+    summary: 'Obtener la lista de servicios de un conductor',
+    description: 'Retorna todos los servicios de un conductor específico con información completa del cliente y admin.'
+  })
   @ApiResponse({
     status: 200,
-    description: 'Lista de servicios del conductor',
+    description: 'Lista de servicios del conductor con información completa',
     schema: {
       example: [
         {
@@ -187,7 +205,31 @@ export class ServiciosController {
           precio: 22.43,
           created_at: '2024-07-25T12:00:00.000Z',
           updated_at: null,
-          deleted_at: null
+          deleted_at: null,
+          cliente: {
+            id: 58,
+            nombre: 'Ana',
+            apellidos: 'Pérez Mora',
+            telefono: '600000001',
+            prefijo: '+34',
+            email: 'ana@correo.com',
+            direccionHabitual: 'C. Inventada, 123, 28000 Madrid, España'
+          },
+          conductor: {
+            id: 2,
+            nombre: 'Martín',
+            apellidos: 'Domínguez',
+            telefono: '664001824',
+            matricula: '1377CVX',
+            marcaCoche: 'Tesla',
+            modeloCoche: 's3'
+          },
+          admin: {
+            id: 22,
+            nombre: 'Admin',
+            apellidos: 'Sistema',
+            email: 'admin@taxi.com'
+          }
         }
       ]
     }
@@ -197,10 +239,13 @@ export class ServiciosController {
   }
 
   @Get('getById')
-  @ApiOperation({ summary: 'Obtener un servicio por ID' })
+  @ApiOperation({ 
+    summary: 'Obtener un servicio por ID',
+    description: 'Retorna un servicio específico con información completa del cliente, conductor y admin.'
+  })
   @ApiResponse({
     status: 200,
-    description: 'Servicio encontrado',
+    description: 'Servicio encontrado con información completa',
     schema: {
       example: {
         id: 1100,
@@ -221,7 +266,31 @@ export class ServiciosController {
         precio: 22.43,
         created_at: '2024-07-25T12:00:00.000Z',
         updated_at: null,
-        deleted_at: null
+        deleted_at: null,
+        cliente: {
+          id: 58,
+          nombre: 'Ana',
+          apellidos: 'Pérez Mora',
+          telefono: '600000001',
+          prefijo: '+34',
+          email: 'ana@correo.com',
+          direccionHabitual: 'C. Inventada, 123, 28000 Madrid, España'
+        },
+        conductor: {
+          id: 2,
+          nombre: 'Martín',
+          apellidos: 'Domínguez',
+          telefono: '664001824',
+          matricula: '1377CVX',
+          marcaCoche: 'Tesla',
+          modeloCoche: 's3'
+        },
+        admin: {
+          id: 22,
+          nombre: 'Admin',
+          apellidos: 'Sistema',
+          email: 'admin@taxi.com'
+        }
       }
     }
   })

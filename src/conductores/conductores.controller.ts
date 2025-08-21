@@ -9,11 +9,13 @@ import { CambiarPasswordCodigoDto } from './dto/cambiar-password-codigo.dto';
 import { GuardarCoordenadasDto } from './dto/guardar-coordenadas.dto';
 import { PenalizarConductorDto } from './dto/penalizar-conductor.dto';
 import { Request } from 'express';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
-// import { AuthGuard } from '../auth/auth.guard'; // Descomenta si tienes un guard de autenticación
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('conductores')
 @Controller('conductores')
+@UseGuards(JwtAuthGuard) // Proteger todo el controlador
+@ApiBearerAuth('JWT-auth') // Agregar autenticación Bearer en Swagger
 export class ConductoresController {
   constructor(private readonly conductoresService: ConductoresService) {}
 

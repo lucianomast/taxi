@@ -1,10 +1,13 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import { NotificacionesService } from './notificaciones.service';
 import { EnviarNotificacionDto } from './dto/enviar-notificacion.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('notificaciones')
 @Controller('notificaciones')
+@UseGuards(JwtAuthGuard) // Proteger todo el controlador
+@ApiBearerAuth('JWT-auth') // Agregar autenticación Bearer en Swagger
 export class NotificacionesController {
   constructor(private readonly notificacionesService: NotificacionesService) {}
 

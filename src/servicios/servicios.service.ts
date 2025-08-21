@@ -186,17 +186,27 @@ export class ServiciosService {
   }
 
   async getLista(): Promise<Servicio[]> {
-    return this.serviciosRepository.find();
+    return this.serviciosRepository.find({
+      relations: ['cliente'],
+      order: { created_at: 'DESC' }
+    });
   }
 
   async getById(id: number): Promise<Servicio> {
-    const servicio = await this.serviciosRepository.findOne({ where: { id } });
+    const servicio = await this.serviciosRepository.findOne({ 
+      where: { id },
+      relations: ['cliente', 'conductor', 'admin']
+    });
     if (!servicio) throw new NotFoundException('Servicio no encontrado');
     return servicio;
   }
 
   async getListaConductor(conductorId: number) {
-    return this.serviciosRepository.find({ where: { conductorId } });
+    return this.serviciosRepository.find({ 
+      where: { conductorId },
+      relations: ['cliente', 'conductor', 'admin'],
+      order: { created_at: 'DESC' }
+    });
   }
 
   private async obtenerCoordenadas(direccion: string): Promise<{ lat: string; lng: string }> {

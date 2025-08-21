@@ -1,13 +1,16 @@
-import { Controller, Post, Body, BadRequestException, Put, Param, Get, Query } from '@nestjs/common';
+import { Controller, Post, Body, BadRequestException, Put, Param, Get, Query, UseGuards } from '@nestjs/common';
 import { ClientesService } from './clientes.service';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { CrearClienteDto } from './dto/crear-cliente.dto';
 import { ActualizarClienteDto } from './dto/actualizar-cliente.dto';
 import { GetLocationDto } from './dto/get-location.dto';
 import { ExportarClientesDto } from './dto/exportar-clientes.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('clientes')
 @Controller('clientes')
+@UseGuards(JwtAuthGuard) // Proteger todo el controlador
+@ApiBearerAuth('JWT-auth') // Agregar autenticación Bearer en Swagger
 export class ClientesController {
   constructor(private readonly clientesService: ClientesService) {}
 
